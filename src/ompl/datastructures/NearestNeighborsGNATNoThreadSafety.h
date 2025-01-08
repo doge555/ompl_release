@@ -1,36 +1,36 @@
 /*********************************************************************
-* Software License Agreement (BSD License)
-*
-*  Copyright (c) 2011, Rice University
-*  All rights reserved.
-*
-*  Redistribution and use in source and binary forms, with or without
-*  modification, are permitted provided that the following conditions
-*  are met:
-*
-*   * Redistributions of source code must retain the above copyright
-*     notice, this list of conditions and the following disclaimer.
-*   * Redistributions in binary form must reproduce the above
-*     copyright notice, this list of conditions and the following
-*     disclaimer in the documentation and/or other materials provided
-*     with the distribution.
-*   * Neither the name of the Rice University nor the names of its
-*     contributors may be used to endorse or promote products derived
-*     from this software without specific prior written permission.
-*
-*  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-*  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-*  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
-*  FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
-*  COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
-*  INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
-*  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
-*  LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
-*  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
-*  LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
-*  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-*  POSSIBILITY OF SUCH DAMAGE.
-*********************************************************************/
+ * Software License Agreement (BSD License)
+ *
+ *  Copyright (c) 2011, Rice University
+ *  All rights reserved.
+ *
+ *  Redistribution and use in source and binary forms, with or without
+ *  modification, are permitted provided that the following conditions
+ *  are met:
+ *
+ *   * Redistributions of source code must retain the above copyright
+ *     notice, this list of conditions and the following disclaimer.
+ *   * Redistributions in binary form must reproduce the above
+ *     copyright notice, this list of conditions and the following
+ *     disclaimer in the documentation and/or other materials provided
+ *     with the distribution.
+ *   * Neither the name of the Rice University nor the names of its
+ *     contributors may be used to endorse or promote products derived
+ *     from this software without specific prior written permission.
+ *
+ *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ *  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ *  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+ *  FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+ *  COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+ *  INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+ *  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+ *  LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ *  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ *  LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+ *  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ *  POSSIBILITY OF SUCH DAMAGE.
+ *********************************************************************/
 
 /* Author: Mark Moll, Bryant Gipson */
 
@@ -60,7 +60,7 @@ namespace ompl
 
         @par External documentation
         S. Brin, Near neighbor search in large metric spaces, in <em>Proc. 21st
-        Conf. on Very Large Databases (VLDB)</em>, pp. 574–584, 1995.
+        Conf. on Very Large Databases (VLDB)</em>, pp. 574â€“584, 1995.
 
         B. Gipson, M. Moll, and L.E. Kavraki, Resolution independent density
          estimation for motion planning in high-dimensional spaces, in
@@ -235,6 +235,19 @@ namespace ompl
             assert(nodeQueue_.empty());
         }
 
+        /// Return the nearest neighbors within distance \c radius in sorted order
+        void nearestO(const _T &data, double radius, std::vector<_T> &nbh) const
+        {
+            nbh.clear();
+            if (size_)
+            {
+                nearestOInternal(data, radius);
+                postprocessNearest(nbh);
+            }
+            assert(nearQueue_.empty());
+            assert(nodeQueue_.empty());
+        }
+
         std::size_t size() const override
         {
             return size_;
@@ -361,6 +374,29 @@ namespace ompl
                 node->nearestR(*this, data, radius);
             }
         }
+
+        /// \brief Return in nearQueue_ the elements that are within distance radius of data.
+        void nearestOInternal(const _T &data, double radius) const
+        {
+            Node *node;
+
+            tree_->insertNeighborR(nearQueue_, radius, tree_->pivot_,
+                                   NearestNeighbors<_T>::distFun_(data, tree_->pivot_));
+            tree_->nearestR(*this, data, radius);
+
+            while (!nodeQueue_.empty())
+            {
+                node = nodeQueue_.top();
+                nodeQueue_.pop();
+
+                if (abs(node->distToPivot_ - node->minRadius_) > radius &&
+                    node->distToPivot_ - node->maxRadius_ > radius)
+                    continue;
+
+                node->nearestR(*this, data, radius);
+            }
+        }
+
         /// \brief Convert the internal data structure used for storing neighbors
         /// to the vector that NearestNeighbor API requires.
         void postprocessNearest(std::vector<_T> &nbh) const
@@ -443,9 +479,8 @@ namespace ompl
                             gnat.rebuildDataStructure();
                         else if (gnat.size_ >= gnat.rebuildSize_)
                         {
-                            std::size_t rebuildSize = gnat.rebuildSize_ << 1;
+                            gnat.rebuildSize_ <<= 1;
                             gnat.rebuildDataStructure();
-                            gnat.rebuildSize_ = rebuildSize;
                         }
                         else
                             split(gnat);
@@ -506,10 +541,9 @@ namespace ompl
                 for (auto &child : children_)
                 {
                     // make sure degree lies between minDegree_ and maxDegree_
-                    child->degree_ =
-                        std::min(std::max((unsigned int)((degree_ * child->data_.size()) / data_.size()),
-                                          gnat.minDegree_),
-                                 gnat.maxDegree_);
+                    child->degree_ = std::min(
+                        std::max((unsigned int)((degree_ * child->data_.size()) / data_.size()), gnat.minDegree_),
+                        gnat.maxDegree_);
                     // singleton
                     if (child->minRadius_ >= std::numeric_limits<double>::infinity())
                         child->minRadius_ = child->maxRadius_ = 0.;
@@ -805,6 +839,6 @@ namespace ompl
         double estimatedDimension_;
 #endif
     };
-}
+}  // namespace ompl
 
 #endif

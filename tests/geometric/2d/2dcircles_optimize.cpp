@@ -51,6 +51,7 @@ OMPL_POP_CLANG
 #include "ompl/geometric/planners/informedtrees/BITstar.h"
 #include "ompl/geometric/planners/cforest/CForest.h"
 #include "ompl/geometric/planners/informedtrees/EITstar.h"
+#include "ompl/geometric/planners/informedtrees/DITstar.h"
 #include "ompl/geometric/planners/informedtrees/EIRMstar.h"
 #include "ompl/geometric/planners/prm/PRMstar.h"
 #include "ompl/geometric/planners/rrt/RRTstar.h"
@@ -363,6 +364,16 @@ protected:
     }
 };
 
+class DITstarTest : public TestPlanner
+{
+protected:
+
+    base::PlannerPtr newPlanner(const base::SpaceInformationPtr &si) const override
+    {
+        return std::make_shared<geometric::DITstar>(si);
+    }
+};
+
 class EITstarTest : public TestPlanner
 {
 protected:
@@ -442,6 +453,7 @@ OMPL_PLANNER_TEST(AITstar)
 OMPL_PLANNER_TEST(BITstar)
 OMPL_PLANNER_TEST(CForest)
 OMPL_PLANNER_TEST(EITstar)
+OMPL_PLANNER_TEST(DITstar)
 OMPL_PLANNER_TEST(EIRMstar)
 OMPL_PLANNER_TEST(PRM)
 OMPL_PLANNER_TEST(PRMstar)

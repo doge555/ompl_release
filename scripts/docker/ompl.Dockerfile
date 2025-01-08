@@ -1,10 +1,10 @@
-FROM ubuntu:jammy AS builder
+FROM ubuntu:focal AS builder
 # avoid interactive configuration dialog from tzdata, which gets pulled in
 # as a dependency
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && \
     apt-get install -y \
-        build-essential \
+        build-essential  \
         castxml \
         cmake \
         libboost-filesystem-dev \
@@ -17,41 +17,39 @@ RUN apt-get update && \
         libeigen3-dev \
         libexpat1 \
         libflann-dev \
+        libode-dev \
+        libtinfo5 \
         libtriangle-dev \
-        ninja-build \
         pkg-config \
         python3-dev \
         python3-numpy \
         python3-pip \
-        pypy3 \
         wget && \
     # Install spot
-    wget -O /etc/apt/trusted.gpg.d/lrde.gpg https://www.lrde.epita.fr/repo/debian.gpg && \
+    wget --no-check-certificate -q -O - https://www.lrde.epita.fr/repo/debian.gpg | apt-key add - && \
     echo 'deb http://www.lrde.epita.fr/repo/debian/ stable/' >> /etc/apt/sources.list && \
     apt-get update && \
     apt-get install -y libspot-dev && \
+    # Install pypy3:
+    wget --no-check-certificate -q -O- https://downloads.python.org/pypy/pypy3.7-v7.3.3-linux64.tar.bz2 |tar jxf - && \
     pip3 install pygccxml pyplusplus
 COPY . /ompl
-WORKDIR /ompl
-RUN echo $PATH
+WORKDIR /build
 RUN cmake \
-        -G Ninja \
-        -B build \
         -DPYTHON_EXEC=/usr/bin/python3 \
         -DOMPL_REGISTRATION=OFF \
-        -DCMAKE_INSTALL_PREFIX=/usr && \
-    cmake --build build -t update_bindings && \
-    cmake --build build && \
-    cmake --install build && \
-    cd tests/cmake_export && \
-    cmake -B build -DCMAKE_INSTALL_PREFIX=../../install && \
-    cmake --build build
+        -DCMAKE_INSTALL_PREFIX=/usr \
+        -DPYPY=/pypy3.7-v7.3.3-linux64/bin/pypy3.7 \
+        /ompl && \
+    make update_bindings -j `nproc` && \
+    make -j `nproc` && \
+    make install
 
-FROM ubuntu:jammy
+FROM ubuntu:focal
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && \
     apt-get install -y \
-        build-essential \
+        build-essential  \
         cmake \
         libboost-filesystem-dev \
         libboost-numpy-dev \
@@ -61,15 +59,15 @@ RUN apt-get update && \
         libboost-system-dev \
         libeigen3-dev \
         libflann-dev \
+        libode-dev \
         libtriangle-dev \
-        ninja-build \
         pkg-config \
         python3-dev \
         python3-numpy \
         python3-pip \
         wget && \
     # Install spot
-    wget -O /etc/apt/trusted.gpg.d/lrde.gpg https://www.lrde.epita.fr/repo/debian.gpg && \
+    wget --no-check-certificate -q -O - https://www.lrde.epita.fr/repo/debian.gpg | apt-key add - && \
     echo 'deb http://www.lrde.epita.fr/repo/debian/ stable/' >> /etc/apt/sources.list && \
     apt-get update && \
     apt-get install -y libspot-dev

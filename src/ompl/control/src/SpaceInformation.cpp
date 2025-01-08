@@ -143,9 +143,7 @@ void ompl::control::SpaceInformation::setStatePropagator(const StatePropagatorPt
 
 bool ompl::control::SpaceInformation::canPropagateBackward() const
 {
-    if (statePropagator_)
-        return statePropagator_->canPropagateBackward();
-    return false;
+    return statePropagator_->canPropagateBackward();
 }
 
 void ompl::control::SpaceInformation::propagate(const base::State *state, const Control *control, int steps,

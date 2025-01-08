@@ -10,6 +10,7 @@ RUN apt-get update && \
         libboost-test-dev \
         libeigen3-dev \
         libflann-dev \
+        libode-dev \
         pkg-config
 COPY . /root/ompl
 WORKDIR /root/ompl/build

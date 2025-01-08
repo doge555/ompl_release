@@ -38,7 +38,7 @@
 #include "ompl/base/objectives/PathLengthOptimizationObjective.h"
 #include <boost/graph/dijkstra_shortest_paths.hpp>
 #include <utility>
-#include <Eigen/Core>
+#include <eigen3/Eigen/Core>
 
 namespace ompl
 {

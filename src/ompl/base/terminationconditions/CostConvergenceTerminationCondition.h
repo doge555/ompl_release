@@ -34,9 +34,6 @@
 
 /* Author: Henning Kayser, Mark Moll */
 
-#ifndef OMPL_BASE_COST_CONVERGENCE_TERMINATION_CONDITION_
-#define OMPL_BASE_COST_CONVERGENCE_TERMINATION_CONDITION_
-
 #include "ompl/base/PlannerTerminationCondition.h"
 
 namespace ompl
@@ -79,5 +76,3 @@ namespace ompl
         };
     }  // namespace base
 }  // namespace ompl
-
-#endif

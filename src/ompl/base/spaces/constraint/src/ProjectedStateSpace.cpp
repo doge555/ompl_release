@@ -36,7 +36,7 @@
 
 #include "ompl/base/spaces/constraint/ProjectedStateSpace.h"
 
-#include <Eigen/Core>
+#include <eigen3/Eigen/Core>
 #include <utility>
 
 /// ProjectedStateSampler

@@ -40,6 +40,7 @@
 #include "ompl/datastructures/NearestNeighborsLinear.h"
 #include "ompl/geometric/planners/prm/ConnectionStrategy.h"
 #include "ompl/geometric/planners/prm/PRM.h"
+#include "ompl/geometric/planners/quotientspace/QRRT.h"
 #include "ompl/geometric/planners/informedtrees/BITstar.h"
 #include <deque>
 #include <map>
@@ -56,10 +57,7 @@ namespace ompl
         {
             NearestNeighborsLinear<PRM::Vertex> nn;
             std::shared_ptr<NearestNeighbors<PRM::Vertex> > nnPtr(&nn);
-            return sizeof(KStrategy<PRM::Vertex>(1, nnPtr)) +
-                sizeof(KStarStrategy<PRM::Vertex>(dummyFn, nnPtr, 1)) +
-                sizeof(KBoundedStrategy<PRM::Vertex>(1, 1., nnPtr)) +
-                sizeof(nn);
+            return sizeof(KStrategy<PRM::Vertex>(1, nnPtr)) + sizeof(KStarStrategy<PRM::Vertex>(dummyFn, nnPtr, 1)) + sizeof(nn);
         }
         inline int dummySTLContainerSize()
         {
@@ -68,6 +66,10 @@ namespace ompl
                 sizeof(std::vector<const ompl::base::State*>) +
                 sizeof(std::vector< std::shared_ptr<ompl::geometric::BITstar::Vertex> >) +
                 sizeof(std::vector< std::shared_ptr<ompl::base::SpaceInformation> >);
+        }
+        inline int dummyQRRTsize()
+        {
+            return sizeof(QRRT);
         }
     }
 }

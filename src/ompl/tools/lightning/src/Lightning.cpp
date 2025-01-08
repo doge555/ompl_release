@@ -94,7 +94,6 @@ void ompl::tools::Lightning::setup()
             if (filePath_.empty())
             {
                 OMPL_ERROR("No file path has been specified, unable to load experience DB");
-                return; 
             }
             else
             {
@@ -157,19 +156,6 @@ ompl::base::PlannerStatus ompl::tools::Lightning::solve(const base::PlannerTermi
         // Logging
         log.planner = "neither_planner";
         log.result = "timedout";
-        log.is_saved = "not_saved";
-    }
-    else if ((lastStatus_ == ompl::base::PlannerStatus::INVALID_START)
-            || (lastStatus_ == ompl::base::PlannerStatus::INVALID_GOAL)
-            || (lastStatus_ == ompl::base::PlannerStatus::UNRECOGNIZED_GOAL_TYPE))
-    {
-        // Skip further processing if absolutely no path is available
-        OMPL_ERROR("Lightning Solve: invalid start or goal, planner status: %s", lastStatus_.asString().c_str());
-        stats_.numSolutionsFailed_++;
-
-        // Logging
-        log.planner = "neither_planner";
-        log.result = "failed";
         log.is_saved = "not_saved";
     }
     else if (!lastStatus_)

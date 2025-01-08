@@ -42,7 +42,7 @@
 #include <ompl/geometric/PathGeometric.h>
 #include <ompl/base/SpaceInformation.h>
 
-#include <Eigen/Core>
+#include <eigen3/Eigen/Core>
 
 namespace ompl
 {

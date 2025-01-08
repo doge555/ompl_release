@@ -227,18 +227,6 @@ ompl::base::PlannerStatus ompl::geometric::SST::solve(const base::PlannerTermina
     base::Goal *goal = pdef_->getGoal().get();
     auto *goal_s = dynamic_cast<base::GoalSampleableRegion *>(goal);
 
-    if (goal_s == nullptr)
-    {
-        OMPL_ERROR("%s: Unknown type of goal", getName().c_str());
-        return base::PlannerStatus::UNRECOGNIZED_GOAL_TYPE;
-    }
-
-    if (!goal_s->couldSample())
-    {
-        OMPL_ERROR("%s: Insufficient states in sampleable goal region", getName().c_str());
-        return base::PlannerStatus::INVALID_GOAL;
-    }
-
     while (const base::State *st = pis_.nextStart())
     {
         auto *motion = new Motion(si_);
@@ -257,8 +245,6 @@ ompl::base::PlannerStatus ompl::geometric::SST::solve(const base::PlannerTermina
     if (!sampler_)
         sampler_ = si_->allocStateSampler();
 
-    const base::ReportIntermediateSolutionFn intermediateSolutionCallback = pdef_->getIntermediateSolutionCallback();
-
     OMPL_INFORM("%s: Starting planning with %u states already in datastructure", getName().c_str(), nn_->size());
 
     Motion *solution = nullptr;
@@ -274,7 +260,7 @@ ompl::base::PlannerStatus ompl::geometric::SST::solve(const base::PlannerTermina
     while (ptc == false)
     {
         /* sample random state (with goal biasing) */
-        bool attemptToReachGoal = (rng_.uniform01() < goalBias_ && goal_s->canSample());
+        bool attemptToReachGoal = (goal_s && rng_.uniform01() < goalBias_ && goal_s->canSample());
         if (attemptToReachGoal)
             goal_s->sampleGoal(rstate);
         else
@@ -343,12 +329,6 @@ ompl::base::PlannerStatus ompl::geometric::SST::solve(const base::PlannerTermina
                     prevSolutionCost_ = solution->accCost_;
 
                     OMPL_INFORM("Found solution with cost %.2f", solution->accCost_.value());
-                    if (intermediateSolutionCallback)
-                    {
-                        // the callback requires a vector with const elements -> create a copy
-                        std::vector<const base::State *> prevSolutionConst(prevSolution_.begin(), prevSolution_.end());
-                        intermediateSolutionCallback(this, prevSolutionConst, prevSolutionCost_);
-                    }
                     sufficientlyShort = opt_->isSatisfied(solution->accCost_);
                     if (sufficientlyShort)
                     {

@@ -52,6 +52,8 @@ std::string ompl::base::PlannerStatus::asString() const
             return std::string("Approximate solution");
         case EXACT_SOLUTION:
             return std::string("Exact solution");
+        case ESTIMATED_HEURISTIC_INITIAL_S0LUTION:
+            return std::string("Estimated heuristic initial solution");
         case CRASH:
             return std::string("Crash");
         default:

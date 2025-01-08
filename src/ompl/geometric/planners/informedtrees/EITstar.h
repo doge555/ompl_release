@@ -190,6 +190,10 @@ namespace ompl
             /** \brief Returns the planner data. */
             void getPlannerData(base::PlannerData &data) const override;
 
+            /** \brief Set the seed used by the RNG and the StateSampler. The state sampler must already be allocated,
+             * as a new state sampler will not take this seed. */
+            void setLocalSeed(std::uint_fast32_t localSeed);
+
         protected:
             // ---
             // The settings that turn EIT* into EIRM*.

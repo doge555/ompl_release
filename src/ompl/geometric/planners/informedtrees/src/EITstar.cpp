@@ -41,6 +41,9 @@
 
 #include "ompl/base/objectives/PathLengthOptimizationObjective.h"
 #include "ompl/geometric/PathGeometric.h"
+#include <fstream>
+#include <sys/stat.h>
+
 
 using namespace std::string_literals;
 using namespace ompl::geometric::eitstar;
@@ -467,6 +470,11 @@ namespace ompl
                     }
                 }
             }
+        }
+
+        void EITstar::setLocalSeed(std::uint_fast32_t localSeed)
+        {
+            graph_.setLocalSeed(localSeed);
         }
 
         void EITstar::iterate(const ompl::base::PlannerTerminationCondition &terminationCondition)
@@ -1135,6 +1143,24 @@ namespace ompl
                 {
                     OMPL_INFORM("%s (%u iterations): Found an exact solution of cost %.4f.", name_.c_str(), iteration_,
                                 solutionCost_.value());
+                    const char* filename_cost_eit = "/tmp/result_cost_eit.csv";
+                    struct stat sb4;
+                    std::ofstream myFile_cost_eit;
+
+                      // Check if file for COST was created
+
+                    if (stat(filename_cost_eit, &sb4) == 0) {
+                        OMPL_INFORM("File exists and load new COST - EIT*");
+                        myFile_cost_eit.open("/tmp/result_cost_eit.csv", std::ios::out | std::ios::app | std::ios::binary); 
+                        myFile_cost_eit << solutionCost_.value() << ",";
+                    }
+                    else {
+                        OMPL_INFORM("File does not exisit ->create new file - EIT*");
+                        myFile_cost_eit.open("/tmp/result_cost_eit.csv");
+                        myFile_cost_eit << solutionCost_.value() << ",";
+                    }
+
+                    myFile_cost_eit.close();
                     break;
                 }
                 case ompl::base::PlannerStatus::StatusType::APPROXIMATE_SOLUTION:

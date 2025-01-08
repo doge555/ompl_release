@@ -72,6 +72,10 @@ namespace ompl
             /** \brief Allocate a state sampler for the path-length objective (i.e., direct ellipsoidal sampling). */
             InformedSamplerPtr allocInformedStateSampler(const ProblemDefinitionPtr &probDefn,
                                                          unsigned int maxNumberCalls) const override;
+            
+            /** \brief Allocate OBDsampler for the path-length objective (i.e., direct ellipsoidal sampling). */
+            AdaptiveSamplerPtr allocAdaptiveStateSampler(const ProblemDefinitionPtr &probDefn,
+                                                         unsigned int maxNumberCalls) const override;
         };
     }
 }

@@ -70,12 +70,6 @@ void ompl::tools::Thunder::initialize()
 
 void ompl::tools::Thunder::setup()
 {
-    if (filePath_ == "unloaded" || filePath_.empty())
-    {
-        OMPL_WARN("Database filepath has not been set. Unable to setup!");
-        return;
-    }
-
     if (!configured_ || !si_->isSetup() || !planner_->isSetup() || !rrPlanner_->isSetup())
     {
         SimpleSetup::setup();
@@ -137,8 +131,8 @@ void ompl::tools::Thunder::setup()
             experienceDB_->getSPARSdb()->setup();
 
             experienceDB_->getSPARSdb()->setStretchFactor(1.2);
-            experienceDB_->getSPARSdb()->setSparseDeltaFraction(0.05);  // vertex visibility range  = maximum_extent *
-                                                                        // this_fraction
+            experienceDB_->getSPARSdb()->setSparseDeltaFraction(
+                0.05);  // vertex visibility range  = maximum_extent * this_fraction
             // experienceDB_->getSPARSdb()->setDenseDeltaFraction(0.001);
 
             experienceDB_->getSPARSdb()->printDebug();
@@ -243,23 +237,10 @@ ompl::base::PlannerStatus ompl::tools::Thunder::solve(const base::PlannerTermina
         log.result = "timedout";
         log.is_saved = "not_saved";
     }
-    else if ((lastStatus_ == ompl::base::PlannerStatus::INVALID_START)
-            || (lastStatus_ == ompl::base::PlannerStatus::INVALID_GOAL)
-            || (lastStatus_ == ompl::base::PlannerStatus::UNRECOGNIZED_GOAL_TYPE))
-    {
-        // Skip further processing if absolutely no path is available
-        OMPL_ERROR("Lightning Solve: invalid start or goal, planner status: %s", lastStatus_.asString().c_str());
-        stats_.numSolutionsFailed_++;
-
-        // Logging
-        log.planner = "neither_planner";
-        log.result = "failed";
-        log.is_saved = "not_saved";
-    }
     else if (!lastStatus_)
     {
         // Skip further processing if absolutely no path is available
-        OMPL_ERROR("Thunder Solve: Unknown failure, planner status: %s", lastStatus_.asString().c_str());
+        OMPL_ERROR("Thunder Solve: Unknown failure");
         stats_.numSolutionsFailed_++;
 
         // Logging

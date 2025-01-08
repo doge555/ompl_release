@@ -40,8 +40,8 @@
 #include <fstream>
 #include <vector>
 #include <limits>
-#include <Eigen/Core>
-#include <Eigen/Dense>
+#include <eigen3/Eigen/Core>
+#include <eigen3/Eigen/Dense>
 #include <functional>
 
 struct Circles2D

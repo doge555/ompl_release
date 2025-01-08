@@ -45,6 +45,9 @@
 #include "ompl/base/objectives/PathLengthOptimizationObjective.h"
 #include "ompl/util/Console.h"
 
+#include <fstream>
+#include <sys/stat.h>
+
 using namespace std::string_literals;
 using namespace ompl::geometric::aitstar;
 
@@ -203,12 +206,9 @@ namespace ompl
             graph_.clear();
             forwardQueue_.clear();
             reverseQueue_.clear();
-            if (objective_)
-            {
-                solutionCost_ = objective_->infiniteCost();
-                approximateSolutionCost_ = objective_->infiniteCost();
-                approximateSolutionCostToGoal_ = objective_->infiniteCost();
-            }
+            solutionCost_ = objective_->infiniteCost();
+            approximateSolutionCost_ = objective_->infiniteCost();
+            approximateSolutionCostToGoal_ = objective_->infiniteCost();
             numIterations_ = 0u;
             numInconsistentOrUnconnectedTargets_ = 0u;
             Planner::clear();
@@ -470,6 +470,24 @@ namespace ompl
                 {
                     OMPL_INFORM("%s (%u iterations): Found an exact solution of cost %.4f.", name_.c_str(),
                                 numIterations_, solutionCost_.value());
+                    const char* filename_cost_ait = "/tmp/result_cost_ait.csv";
+                    struct stat sb4;
+                    std::ofstream myFile_cost_ait;
+
+                      // Check if file for COST was created
+
+                    if (stat(filename_cost_ait, &sb4) == 0) {
+                        OMPL_INFORM("File exists and load new COST - AIT*");
+                        myFile_cost_ait.open("/tmp/result_cost_ait.csv", std::ios::out | std::ios::app | std::ios::binary); 
+                        myFile_cost_ait << solutionCost_.value() << ",";
+                    }
+                    else {
+                        OMPL_INFORM("File does not exisit ->create new file - AIT*");
+                        myFile_cost_ait.open("/tmp/result_cost_ait.csv");
+                        myFile_cost_ait << solutionCost_.value() << ",";
+                    }
+
+                    myFile_cost_ait.close();
                     break;
                 }
                 case ompl::base::PlannerStatus::StatusType::APPROXIMATE_SOLUTION:
@@ -495,7 +513,6 @@ namespace ompl
                     }
                     break;
                 }
-                case ompl::base::PlannerStatus::StatusType::INFEASIBLE:
                 case ompl::base::PlannerStatus::StatusType::UNKNOWN:
                 case ompl::base::PlannerStatus::StatusType::INVALID_START:
                 case ompl::base::PlannerStatus::StatusType::INVALID_GOAL:
@@ -646,6 +663,11 @@ namespace ompl
                                           }),
                            vertices.end());
             return vertices;
+        }
+
+        void AITstar::setLocalSeed(std::uint_fast32_t localSeed)
+        {
+            graph_.setLocalSeed(localSeed);
         }
 
         void AITstar::iterate(const ompl::base::PlannerTerminationCondition &terminationCondition)
@@ -1158,15 +1180,6 @@ namespace ompl
 
                     // Let the problem definition know that a new solution exists.
                     pdef_->addSolutionPath(solution);
-
-                    // If enabled, pass the intermediate solution back through the callback:
-                    if (static_cast<bool>(pdef_->getIntermediateSolutionCallback()))
-                    {
-                        const auto& path = solution.path_->as<ompl::geometric::PathGeometric>()->getStates();
-                        // the callback requires a vector with const elements
-                        std::vector<const base::State *> const_path(path.begin(), path.end());
-                        pdef_->getIntermediateSolutionCallback()(this, const_path, solutionCost_);
-                    }
 
                     // Let the user know about the new solution.
                     informAboutNewSolution();

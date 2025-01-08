@@ -64,6 +64,8 @@ namespace ompl
                 APPROXIMATE_SOLUTION,
                 /// The planner found an exact solution
                 EXACT_SOLUTION,
+                /// Estimated heuristic initial solution for MIT*
+                ESTIMATED_HEURISTIC_INITIAL_S0LUTION,
                 /// The planner crashed
                 CRASH,
                 /// The planner did not find a solution for some other reason

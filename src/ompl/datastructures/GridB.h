@@ -53,7 +53,6 @@ namespace ompl
     public:
         /// Definition of a cell in this grid
         using Cell = typename GridN<_T>::Cell;
-        using BaseCell = typename GridN<_T>::BaseCell;
 
         /// The datatype for arrays of cells
         using CellArray = typename GridN<_T>::CellArray;
@@ -222,7 +221,7 @@ namespace ompl
         }
 
         /// Remove a cell from the grid
-        bool remove(BaseCell *cell) override
+        virtual bool remove(Cell *cell)
         {
             if (cell)
             {

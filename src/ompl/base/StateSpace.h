@@ -1,36 +1,36 @@
 /*********************************************************************
-* Software License Agreement (BSD License)
-*
-*  Copyright (c) 2010, Rice University
-*  All rights reserved.
-*
-*  Redistribution and use in source and binary forms, with or without
-*  modification, are permitted provided that the following conditions
-*  are met:
-*
-*   * Redistributions of source code must retain the above copyright
-*     notice, this list of conditions and the following disclaimer.
-*   * Redistributions in binary form must reproduce the above
-*     copyright notice, this list of conditions and the following
-*     disclaimer in the documentation and/or other materials provided
-*     with the distribution.
-*   * Neither the name of the Rice University nor the names of its
-*     contributors may be used to endorse or promote products derived
-*     from this software without specific prior written permission.
-*
-*  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-*  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-*  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
-*  FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
-*  COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
-*  INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
-*  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
-*  LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
-*  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
-*  LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
-*  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-*  POSSIBILITY OF SUCH DAMAGE.
-*********************************************************************/
+ * Software License Agreement (BSD License)
+ *
+ *  Copyright (c) 2010, Rice University
+ *  All rights reserved.
+ *
+ *  Redistribution and use in source and binary forms, with or without
+ *  modification, are permitted provided that the following conditions
+ *  are met:
+ *
+ *   * Redistributions of source code must retain the above copyright
+ *     notice, this list of conditions and the following disclaimer.
+ *   * Redistributions in binary form must reproduce the above
+ *     copyright notice, this list of conditions and the following
+ *     disclaimer in the documentation and/or other materials provided
+ *     with the distribution.
+ *   * Neither the name of the Rice University nor the names of its
+ *     contributors may be used to endorse or promote products derived
+ *     from this software without specific prior written permission.
+ *
+ *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ *  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ *  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+ *  FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+ *  COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+ *  INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+ *  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+ *  LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ *  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ *  LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+ *  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ *  POSSIBILITY OF SUCH DAMAGE.
+ *********************************************************************/
 
 /* Author: Ioan Sucan */
 
@@ -38,6 +38,7 @@
 #define OMPL_BASE_STATE_SPACE_
 
 #include "ompl/base/State.h"
+#include "ompl/base/Cost.h"
 #include "ompl/base/StateSpaceTypes.h"
 #include "ompl/base/StateSampler.h"
 #include "ompl/base/ProjectionEvaluator.h"
@@ -252,9 +253,31 @@ namespace ompl
                 setValidSegmentCountFactor() */
             virtual void setLongestValidSegmentFraction(double segmentFraction);
 
+            /** \brief When performing discrete validation of motions,
+                the length of the largest Direction Cost that does not
+                require state projection needs to be specified. This
+                function returns this length, for this state space, as a
+                fraction of the space's maximum extent. */
+            virtual double getLargestDirectionCostFraction() const;
+
+            /** \brief When performing discrete validation of motions,
+                the length of the largest Direction Cost that does not
+                require state validation needs to be specified. This
+                function sets this length as a fraction of the
+                space's maximum extent.
+
+                \note This function's effect is not considered until
+                after setup() has been called. For immediate effects
+                (i.e., during planning) use
+                setValidSegmentCountFactor() */
+            virtual void setLargestDirectionCostFraction(double segmentFraction);
+
             /** \brief Count how many segments of the "longest valid length" fit on the motion from \e state1 to \e
              * state2 */
             virtual unsigned int validSegmentCount(const State *state1, const State *state2) const;
+
+            /** \brief heuristic inadmissible estimation of Directiono cost */
+            virtual ompl::base::Cost inadmissibleDirectionCost(const State *state1, const State *state2) const;
 
             /** \brief Set \e factor to be the value to multiply the
                 return value of validSegmentCount(). By default, this
@@ -264,11 +287,19 @@ namespace ompl
                 called). */
             virtual void setValidSegmentCountFactor(unsigned int factor);
 
-            /** \brief Get the value used to multiply the return value of validSegmentCount().*/
+            /** \brief Get the value used to multiply the return value of inadmissibleDirectionCost().*/
             virtual unsigned int getValidSegmentCountFactor() const;
 
             /** \brief Get the longest valid segment at the time setup() was called. */
             virtual double getLongestValidSegmentLength() const;
+
+            virtual void setLargestDirectionCostFactor(unsigned int factor);
+
+            /** \brief Get the value used to multiply the return value of inadmissibleDirectionCost().*/
+            virtual unsigned int getLargestDirectionCostFactor() const;
+
+            /** \brief Get the largest DIrection Porjection at the time setup() was called. */
+            virtual double getLargestDirectionProjection() const;
 
             /** \brief Compute an array of ints that uniquely identifies the structure of the state space.
                 The first element of the signature is the number of integers that follow */
@@ -376,28 +407,28 @@ namespace ompl
             virtual double *getValueAddressAtIndex(State *state, unsigned int index) const;
 
             /** \brief Const variant of the same function as above; */
-            virtual const double *getValueAddressAtIndex(const State *state, unsigned int index) const;
+            const double *getValueAddressAtIndex(const State *state, unsigned int index) const;
 
             /** \brief Get the locations of values of type double contained in a state from this space. The order of the
                values is
                 consistent with getValueAddressAtIndex(). The setup() function must have been previously called. */
-            virtual const std::vector<ValueLocation> &getValueLocations() const;
+            const std::vector<ValueLocation> &getValueLocations() const;
 
             /** \brief Get the named locations of values of type double contained in a state from this space.
                 The setup() function must have been previously called. */
-            virtual const std::map<std::string, ValueLocation> &getValueLocationsByName() const;
+            const std::map<std::string, ValueLocation> &getValueLocationsByName() const;
 
             /** \brief Get a pointer to the double value in \e state that \e loc points to */
-            virtual double *getValueAddressAtLocation(State *state, const ValueLocation &loc) const;
+            double *getValueAddressAtLocation(State *state, const ValueLocation &loc) const;
 
             /** \brief Const variant of the same function as above; */
-            virtual const double *getValueAddressAtLocation(const State *state, const ValueLocation &loc) const;
+            const double *getValueAddressAtLocation(const State *state, const ValueLocation &loc) const;
 
             /** \brief Get a pointer to the double value in \e state that \e name points to */
-            virtual double *getValueAddressAtName(State *state, const std::string &name) const;
+            double *getValueAddressAtName(State *state, const std::string &name) const;
 
             /** \brief Const variant of the same function as above; */
-            virtual const double *getValueAddressAtName(const State *state, const std::string &name) const;
+            const double *getValueAddressAtName(const State *state, const std::string &name) const;
 
             /** \brief Copy all the real values from a state \e source to the array \e reals using
              * getValueAddressAtLocation() */
@@ -546,6 +577,16 @@ namespace ompl
              * things like doubling the resolution */
             unsigned int longestValidSegmentCountFactor_;
 
+            /** \brief The factor to multiply the value returned by validSegmentCount(). Rarely used but useful for
+             * things like doubling the resolution */
+            unsigned int largestDirectionCostFactor_;
+
+            /** \brief The fraction of the largest Direction Cost */
+            double largestDirectionCostFraction_;
+
+            /** \brief The largest Direction Projection */
+            double largestDirectionProjection_;
+
             /** \brief List of available projections */
             std::map<std::string, ProjectionEvaluatorPtr> projections_;
 
@@ -608,8 +649,6 @@ namespace ompl
             bool isCompound() const override;
 
             bool isHybrid() const override;
-
-            bool isMetricSpace() const override;
 
             /** @name Management of contained subspaces
                 @{ */
@@ -835,7 +874,7 @@ namespace ompl
         AdvancedStateCopyOperation copyStateData(const StateSpace *destS, State *dest, const StateSpace *sourceS,
                                                  const State *source, const std::vector<std::string> &subspaces);
         /** @} */
-    }
-}
+    }  // namespace base
+}  // namespace ompl
 
 #endif

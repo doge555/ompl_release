@@ -46,7 +46,7 @@
 #include <vector>
 #include <valarray>
 #include <iostream>
-#include <Eigen/Core>
+#include <eigen3/Eigen/Core>
 
 namespace ompl
 {

@@ -47,7 +47,7 @@
 #include <memory>
 
 // Eigen core:
-#include <Eigen/Core>
+#include <eigen3/Eigen/Core>
 // Inversion and determinants
 #include <Eigen/LU>
 // SVD decomposition

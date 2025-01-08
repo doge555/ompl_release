@@ -194,6 +194,12 @@ namespace ompl
             /** \brief Get the rewiring scale factor. */
             double getRewireFactor() const;
 
+            /** \brief Set the maximum number of goals BIT* will sample from sampleable goal regions. */
+            void setMaxNumberOfGoals(unsigned int maxNumberOfGoals);
+
+            /** \brief Get the maximum number of goals BIT* will sample from sampleable goal regions. */
+            unsigned int getMaxNumberOfGoals() const;
+
             /** \brief Enable a k-nearest search for instead of an r-disc search. */
             void setUseKNearest(bool useKNearest);
 
@@ -270,6 +276,20 @@ namespace ompl
             /** \brief Returns whether the sample can be pruned, i.e., whether it could ever provide a better solution.
              * The check should always be g^(v) + h^(v) >= g_t(x_g). */
             bool canSampleBePruned(const VertexPtr &sample) const;
+
+            /** \brief Set the seed used by the RNG and the StateSampler. The state sampler must already be allocated,
+             * as a new state sampler will not take this seed. */
+            void setLocalSeed(std::uint_fast32_t localSeed)
+            {
+                // Set the local RNG seed:
+                rng_.setLocalSeed(localSeed);
+
+                // Set the sampler's seed, if present:
+                if (sampler_)
+                {
+                    sampler_->setLocalSeed(localSeed);
+                }
+            };
 
         private:
             // ---
@@ -474,6 +494,9 @@ namespace ompl
 
             /** \brief Whether to consider approximate solutions. */
             bool findApprox_{false};
+
+            /** \brief The maximum number of goals BYD* will sample. */
+            unsigned int maxNumGoals_{10u};
 
             /** \brief The average number of allowed failed attempts before giving up on a sample when sampling a new
              * batch. */

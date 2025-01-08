@@ -81,6 +81,8 @@ namespace ompl
                     Returns -1 if no such transition exists. */
                 int eval(const World &w) const;
 
+                TransitionMap &operator=(const TransitionMap &tm) = default;
+
                 mutable std::unordered_map<World, unsigned int> entries;
             };
 

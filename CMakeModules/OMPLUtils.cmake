@@ -1,12 +1,12 @@
 macro(add_ompl_test test_name)
   add_executable(${ARGV})
   target_link_libraries(${test_name}
-    ompl::ompl
-    Boost::program_options
-    Boost::serialization
-    Boost::filesystem
-    Boost::system
-    Boost::unit_test_framework)
+    ompl
+    ${Boost_PROGRAM_OPTIONS_LIBRARY}
+    ${Boost_SERIALIZATION_LIBRARY}
+    ${Boost_FILESYSTEM_LIBRARY}
+    ${Boost_SYSTEM_LIBRARY}
+    ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY})
   add_test(NAME ${test_name} COMMAND $<TARGET_FILE:${test_name}>)
 endmacro(add_ompl_test)
 
@@ -33,9 +33,7 @@ function(target_link_flags)
     foreach(_target ${ARGV})
         get_target_property(_link_dirs ${_target} LINK_DIRECTORIES)
         foreach(_dir ${_link_dirs})
-            if(NOT ("${_dir}" STREQUAL "_link_dirs-NOTFOUND"))
-                list(APPEND _link_flags "-L${_dir}")
-            endif()
+            list(APPEND _link_flags "-L${_dir}")
         endforeach()
         set(_link_dirs "${_link_dirs};${_link_dirs_target}")
         get_target_property(_link_libs ${_target} LINK_LIBRARIES)

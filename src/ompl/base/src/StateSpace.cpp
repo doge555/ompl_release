@@ -1,36 +1,36 @@
 /*********************************************************************
-* Software License Agreement (BSD License)
-*
-*  Copyright (c) 2010, Rice University
-*  All rights reserved.
-*
-*  Redistribution and use in source and binary forms, with or without
-*  modification, are permitted provided that the following conditions
-*  are met:
-*
-*   * Redistributions of source code must retain the above copyright
-*     notice, this list of conditions and the following disclaimer.
-*   * Redistributions in binary form must reproduce the above
-*     copyright notice, this list of conditions and the following
-*     disclaimer in the documentation and/or other materials provided
-*     with the distribution.
-*   * Neither the name of the Rice University nor the names of its
-*     contributors may be used to endorse or promote products derived
-*     from this software without specific prior written permission.
-*
-*  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-*  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-*  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
-*  FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
-*  COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
-*  INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
-*  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
-*  LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
-*  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
-*  LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
-*  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-*  POSSIBILITY OF SUCH DAMAGE.
-*********************************************************************/
+ * Software License Agreement (BSD License)
+ *
+ *  Copyright (c) 2010, Rice University
+ *  All rights reserved.
+ *
+ *  Redistribution and use in source and binary forms, with or without
+ *  modification, are permitted provided that the following conditions
+ *  are met:
+ *
+ *   * Redistributions of source code must retain the above copyright
+ *     notice, this list of conditions and the following disclaimer.
+ *   * Redistributions in binary form must reproduce the above
+ *     copyright notice, this list of conditions and the following
+ *     disclaimer in the documentation and/or other materials provided
+ *     with the distribution.
+ *   * Neither the name of the Rice University nor the names of its
+ *     contributors may be used to endorse or promote products derived
+ *     from this software without specific prior written permission.
+ *
+ *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ *  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ *  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+ *  FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+ *  COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+ *  INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+ *  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+ *  LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ *  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ *  LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+ *  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ *  POSSIBILITY OF SUCH DAMAGE.
+ *********************************************************************/
 
 #include "ompl/base/StateSpace.h"
 #include "ompl/util/Exception.h"
@@ -77,8 +77,8 @@ namespace ompl
                 return *g_allocatedSpaces;
             }
         }  // namespace
-    }
-}
+    }      // namespace base
+}  // namespace ompl
 /// @endcond
 
 ompl::base::StateSpace::StateSpace()
@@ -93,17 +93,32 @@ ompl::base::StateSpace::StateSpace()
     longestValidSegmentFraction_ = 0.01;  // 1%
     longestValidSegmentCountFactor_ = 1;
 
+    largestDirectionProjection_ = 0.0;
+    largestDirectionCostFraction_ = 0.01;
+    largestDirectionCostFactor_ = 1;
+
     type_ = STATE_SPACE_UNKNOWN;
 
     maxExtent_ = std::numeric_limits<double>::infinity();
 
-    params_.declareParam<double>("longest_valid_segment_fraction",
-                                 [this](double segmentFraction) { setLongestValidSegmentFraction(segmentFraction); },
-                                 [this] { return getLongestValidSegmentFraction(); });
+    params_.declareParam<double>(
+        "longest_valid_segment_fraction",
+        [this](double segmentFraction) { setLongestValidSegmentFraction(segmentFraction); },
+        [this] { return getLongestValidSegmentFraction(); });
 
-    params_.declareParam<unsigned int>("valid_segment_count_factor",
-                                       [this](unsigned int factor) { setValidSegmentCountFactor(factor); },
-                                       [this] { return getValidSegmentCountFactor(); });
+    params_.declareParam<unsigned int>(
+        "valid_segment_count_factor", [this](unsigned int factor) { setValidSegmentCountFactor(factor); },
+        [this] { return getValidSegmentCountFactor(); });
+
+    params_.declareParam<double>(
+        "largest_direction_cost_fraction",
+        [this](double directionCostFraction) { setLargestDirectionCostFraction(directionCostFraction); },
+        [this] { return getLargestDirectionCostFraction(); });
+
+    params_.declareParam<unsigned int>(
+        "largest_direction_cost_factor", [this](unsigned int factor) { setLargestDirectionCostFactor(factor); },
+        [this] { return getLargestDirectionCostFactor(); });
+
     as.list_.push_back(this);
 }
 
@@ -189,8 +204,8 @@ namespace ompl
             locationsMap.clear();
             computeLocationsHelper(s, substateMap, locationsArray, locationsMap, StateSpace::ValueLocation());
         }
-    }
-}
+    }  // namespace base
+}  // namespace ompl
 /// @endcond
 
 const std::string &ompl::base::StateSpace::getName() const
@@ -238,11 +253,21 @@ void ompl::base::StateSpace::setup()
 {
     maxExtent_ = getMaximumExtent();
     longestValidSegment_ = maxExtent_ * longestValidSegmentFraction_;
+    largestDirectionProjection_ = maxExtent_ * largestDirectionCostFraction_;
 
     if (longestValidSegment_ < std::numeric_limits<double>::epsilon())
     {
         std::stringstream error;
         error << "The longest valid segment for state space " + getName() + " must be positive." << std::endl;
+        error << "Space settings:" << std::endl;
+        printSettings(error);
+        throw Exception(error.str());
+    }
+
+    if (largestDirectionProjection_ < std::numeric_limits<double>::epsilon())
+    {
+        std::stringstream error;
+        error << "The largest Direction projection for state space " + getName() + " must be positive." << std::endl;
         error << "Space settings:" << std::endl;
         printSettings(error);
         throw Exception(error.str());
@@ -465,8 +490,8 @@ namespace ompl
                 return a.space->getName() > b.space->getName();
             }
         };
-    }
-}
+    }  // namespace base
+}  // namespace ompl
 
 /// @endcond
 
@@ -590,8 +615,8 @@ void ompl::base::StateSpace::Diagram(std::ostream &out)
             {
                 if ((*it)->isCompound() && (*it)->as<CompoundStateSpace>()->hasSubspace((*jt)->getName()))
                     out << '"' << (*it)->getName() << R"(" -> ")" << (*jt)->getName() << R"(" [label=")"
-                        << ompl::toString((*it)->as<CompoundStateSpace>()->getSubspaceWeight((*jt)->getName())) <<
-                        R"("];)" << std::endl;
+                        << ompl::toString((*it)->as<CompoundStateSpace>()->getSubspaceWeight((*jt)->getName()))
+                        << R"("];)" << std::endl;
                 else if (!StateSpaceIncludes(*it, *jt) && StateSpaceCovers(*it, *jt))
                     out << '"' << (*it)->getName() << R"(" -> ")" << (*jt)->getName() << R"(" [style=dashed];)"
                         << std::endl;
@@ -833,6 +858,22 @@ void ompl::base::StateSpace::setLongestValidSegmentFraction(double segmentFracti
     longestValidSegmentFraction_ = segmentFraction;
 }
 
+void ompl::base::StateSpace::setLargestDirectionCostFactor(unsigned int factor)
+{
+    if (factor < 1)
+        throw Exception("The multiplicative factor for the largest Direction Cost between two states must be strictly "
+                        "positive");
+    largestDirectionCostFactor_ = factor;
+}
+
+void ompl::base::StateSpace::setLargestDirectionCostFraction(double DirectionCostFraction)
+{
+    if (DirectionCostFraction < std::numeric_limits<double>::epsilon() ||
+        DirectionCostFraction > 1.0 - std::numeric_limits<double>::epsilon())
+        throw Exception("The fraction of the extent must be larger than 0 and less than 1");
+    largestDirectionCostFraction_ = DirectionCostFraction;
+}
+
 unsigned int ompl::base::StateSpace::getValidSegmentCountFactor() const
 {
     return longestValidSegmentCountFactor_;
@@ -848,9 +889,29 @@ double ompl::base::StateSpace::getLongestValidSegmentLength() const
     return longestValidSegment_;
 }
 
+unsigned int ompl::base::StateSpace::getLargestDirectionCostFactor() const
+{
+    return largestDirectionCostFactor_;
+}
+
+double ompl::base::StateSpace::getLargestDirectionCostFraction() const
+{
+    return largestDirectionCostFraction_;
+}
+
+double ompl::base::StateSpace::getLargestDirectionProjection() const
+{
+    return largestDirectionProjection_;
+}
+
 unsigned int ompl::base::StateSpace::validSegmentCount(const State *state1, const State *state2) const
 {
     return longestValidSegmentCountFactor_ * (unsigned int)ceil(distance(state1, state2) / longestValidSegment_);
+}
+
+ompl::base::Cost ompl::base::StateSpace::inadmissibleDirectionCost(const State *state1, const State *state2) const
+{
+    return ompl::base::Cost(largestDirectionCostFactor_ * (unsigned int)ceil(distance(state1, state2) / largestDirectionProjection_));
 }
 
 ompl::base::CompoundStateSpace::CompoundStateSpace()
@@ -899,12 +960,6 @@ bool ompl::base::CompoundStateSpace::isHybrid() const
             c = true;
     }
     return c && d;
-}
-
-bool ompl::base::CompoundStateSpace::isMetricSpace() const
-{
-    return std::all_of(components_.begin(), components_.end(),
-                       [](const StateSpacePtr &component) { return component->isMetricSpace(); });
 }
 
 unsigned int ompl::base::CompoundStateSpace::getSubspaceCount() const
@@ -1637,5 +1692,5 @@ namespace ompl
 
             return std::make_shared<CompoundStateSpace>(components, weights);
         }
-    }
-}
+    }  // namespace base
+}  // namespace ompl

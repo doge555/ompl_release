@@ -36,7 +36,7 @@
 
 #include "ompl/base/spaces/constraint/AtlasChart.h"
 #include <boost/math/constants/constants.hpp>
-#include <Eigen/Dense>
+#include <eigen3/Eigen/Dense>
 
 /// AtlasChart::Halfspace
 

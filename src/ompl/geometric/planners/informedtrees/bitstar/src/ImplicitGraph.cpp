@@ -965,6 +965,7 @@ namespace ompl
                         ++numStateCollisionChecks_;
                         if (spaceInformation_->isValid(newState->state()))
                         {
+                            // Remember that this is a new state.
                             newStates.push_back(newState);
 
                             // Update the number of uniformly distributed states
@@ -1096,14 +1097,8 @@ namespace ompl
                 // Run until at the end:
                 while (goalIter != goalEnd)
                 {
-                    // Check if this goal has met the criteria to be pruned, but make sure it is not the goal that is
-                    // the current best solution. The current goal can satisfy the condition for pruning if the
-                    // heuristic is perfect, since samples are pruned unless the combined costs of the heuristic
-                    // cost-to-come and heuristic cost-to-go is (strictly) lower than the current solution cost. If the
-                    // heuristic is perfect, then the heuristic cost-to-come is equal to the solution cost (and the
-                    // heuristic cost-to-go is zero, since this is a goal).
-                    if (this->canSampleBePruned(*goalIter) &&
-                        costHelpPtr_->isCostNotEquivalentTo((*goalIter)->getCost(), solutionCost_))
+                    // Check if this goal has met the criteria to be pruned
+                    if (this->canSampleBePruned(*goalIter))
                     {
                         // It has, remove the goal vertex completely
                         // Check if this vertex is in the tree
@@ -1547,6 +1542,16 @@ namespace ompl
         double BITstar::ImplicitGraph::getRewireFactor() const
         {
             return rewireFactor_;
+        }
+
+        void BITstar::ImplicitGraph::setMaxNumberOfGoals(unsigned int maxNumberOfGoals)
+        {
+            maxNumGoals_ = maxNumberOfGoals;
+        }
+
+        unsigned int BITstar::ImplicitGraph::getMaxNumberOfGoals() const
+        {
+            return maxNumGoals_;
         }
 
         void BITstar::ImplicitGraph::setUseKNearest(bool useKNearest)

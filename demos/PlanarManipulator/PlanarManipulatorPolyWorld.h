@@ -38,7 +38,7 @@
 #define PLANAR_MANIPULATOR_POLY_WORLD_H_
 
 #include "PolyWorld.h"
-#include <Eigen/Dense>
+#include <eigen3/Eigen/Dense>
 #include <cmath>
 #include <vector>
 

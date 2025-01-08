@@ -1,6 +1,3 @@
-py-bindings/stdsize.h
-src/ompl/datastructures/NearestNeighbors.h
-src/ompl/datastructures/NearestNeighborsLinear.h
 src/ompl/geometric/PathGeometric.h
 src/ompl/geometric/PathSimplifier.h
 src/ompl/geometric/PathHybridization.h
@@ -18,6 +15,8 @@ src/ompl/geometric/planners/kpiece/KPIECE1.h
 src/ompl/geometric/planners/kpiece/BKPIECE1.h
 src/ompl/geometric/planners/kpiece/LBKPIECE1.h
 src/ompl/geometric/planners/pdst/PDST.h
+src/ompl/geometric/planners/quotientspace/algorithms/MultiQuotient.h
+src/ompl/geometric/planners/quotientspace/QRRT.h
 src/ompl/geometric/planners/rrt/RRT.h
 src/ompl/geometric/planners/rrt/RRTConnect.h
 src/ompl/geometric/planners/rrt/LazyRRT.h
@@ -34,9 +33,12 @@ src/ompl/geometric/planners/informedtrees/BITstar.h
 src/ompl/geometric/planners/informedtrees/ABITstar.h
 src/ompl/geometric/planners/informedtrees/AITstar.h
 src/ompl/geometric/planners/informedtrees/EITstar.h
+src/ompl/geometric/planners/informedtrees/MITstar.h
 src/ompl/geometric/planners/sbl/SBL.h
 src/ompl/geometric/planners/stride/STRIDE.h
 src/ompl/geometric/planners/fmt/FMT.h
 src/ompl/geometric/planners/fmt/BFMT.h
+src/ompl/datastructures/NearestNeighbors.h
+src/ompl/datastructures/NearestNeighborsLinear.h
 src/ompl/geometric/planners/sst/SST.h
 py-bindings/ompl_py_geometric.h

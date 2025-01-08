@@ -42,7 +42,7 @@
 #include <ompl/base/StateSpace.h>
 #include <ompl/base/spaces/SO2StateSpace.h>
 #include <ompl/base/spaces/RealVectorStateSpace.h>
-#include <Eigen/Core>
+#include <eigen3/Eigen/Core>
 
 namespace ompl
 {

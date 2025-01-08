@@ -37,7 +37,7 @@
 #ifndef OMPL_DATASTRUCTURES_GRID_
 #define OMPL_DATASTRUCTURES_GRID_
 
-#include <Eigen/Core>
+#include <eigen3/Eigen/Core>
 #include <vector>
 #include <iostream>
 #include <cstdlib>

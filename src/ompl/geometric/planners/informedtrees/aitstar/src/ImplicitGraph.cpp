@@ -170,14 +170,12 @@ namespace ompl
                 {
                     // Get a new goal. If there are none, or the underlying state is invalid this will be a nullptr.
                     auto newGoalState = inputStates->nextGoal(terminationCondition);
-
                     // If there was a new valid goal, register it as such and remember that a goal has been added.
                     if (static_cast<bool>(newGoalState))
                     {
                         registerGoalState(newGoalState);
                         addedNewGoalState = true;
                     }
-
                 } while (inputStates->haveMoreGoalStates() && goalVertices_.size() <= maxNumGoals_);
 
                 // Having updated the goals, we now update the starts.
@@ -329,7 +327,7 @@ namespace ompl
                     // Create a new vertex.
                     newSamples_.emplace_back(std::make_shared<Vertex>(spaceInformation_, problemDefinition_, batchId_));
 
-                    bool foundValidSample = false;
+	                bool foundValidSample = false;
                     do
                     {
                         // Sample the associated state uniformly within the informed set.
@@ -337,11 +335,9 @@ namespace ompl
 
                         // Count how many states we've checked.
                         ++numSampledStates_;
-
                         // Check if the sample is valid.
                         foundValidSample = spaceInformation_->getStateValidityChecker()->isValid(newSamples_.back()->getState());
                     } while (!foundValidSample && !terminationCondition);
-
                     // The sample can be invalid if the termination condition is met.
                     if (foundValidSample)
                     {
@@ -351,7 +347,6 @@ namespace ompl
                             goalVertices_.emplace_back(newSamples_.back());
                             newSamples_.back()->setCostToComeFromGoal(objective_->identityCost());
                         }
-
                         ++numValidSamples_;
                     }
                     else
@@ -359,6 +354,8 @@ namespace ompl
                         // Remove the invalid sample.
                         newSamples_.pop_back();
                     }
+
+                    ++numValidSamples_;
                 } while (newSamples_.size() < numNewSamples && !terminationCondition);
 
                 if (newSamples_.size() == numNewSamples)
@@ -551,7 +548,6 @@ namespace ompl
             {
                 // Define the dimension as a helper variable.
                 auto dimension = static_cast<double>(spaceInformation_->getStateDimension());
-
                 // Compute the RRT* factor.
                 return rewireFactor_ *
                        std::pow(2.0 * (1.0 + 1.0 / dimension) *
@@ -559,7 +555,6 @@ namespace ompl
                                      unitNBallMeasure(spaceInformation_->getStateDimension())) *
                                     (std::log(static_cast<double>(numSamples)) / static_cast<double>(numSamples)),
                                 1.0 / dimension);
-
                 // // Compute the FMT* factor.
                 // return 2.0 * rewireFactor_ *
                 //        std::pow((1.0 / dimension) *

@@ -173,7 +173,7 @@ void ompl::base::PlannerInputStates::clear()
     }
     addedStartStates_ = 0;
     sampledGoalsCount_ = 0;
-    pdef_.reset();
+    pdef_ = nullptr;
     si_ = nullptr;
 }
 
@@ -215,7 +215,16 @@ void ompl::base::PlannerInputStates::checkValidity() const
 
 bool ompl::base::PlannerInputStates::use(const ProblemDefinitionPtr &pdef)
 {
-    if (pdef && pdef_ != pdef)
+    if (pdef)
+        return use(pdef.get());
+
+    clear();
+    return true;
+}
+
+bool ompl::base::PlannerInputStates::use(const ProblemDefinition *pdef)
+{
+    if (pdef_ != pdef)
     {
         clear();
         pdef_ = pdef;

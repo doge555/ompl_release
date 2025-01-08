@@ -1,4 +1,3 @@
-py-bindings/stdsize.h
 src/ompl/util/Exception.h
 src/ompl/util/RandomNumbers.h
 src/ompl/util/Console.h

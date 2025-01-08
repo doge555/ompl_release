@@ -1,12 +1,6 @@
-cmake_minimum_required(VERSION 3.12)
-project(ompl VERSION 1.6.0 LANGUAGES CXX)
-set(OMPL_ABI_VERSION 17)
-
-# Use the FindBoost provided by CMake, rather than the one provided by Boost
-# (for CMake >=3.30).
-if (${CMAKE_VERSION} VERSION_GREATER_EQUAL "3.30")
-    cmake_policy(SET CMP0167 OLD)
-endif()
+cmake_minimum_required(VERSION 3.5)
+project(ompl VERSION 1.5.2 LANGUAGES CXX)
+set(OMPL_ABI_VERSION 16)
 
 # set the default build type
 if (NOT CMAKE_BUILD_TYPE)
@@ -21,7 +15,8 @@ endif()
 
 message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
 
-list(APPEND CMAKE_MODULE_PATH
+set(CMAKE_MODULE_PATH
+    "${CMAKE_MODULE_PATH}"
     "${CMAKE_ROOT_DIR}/cmake/Modules"
     "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules")
 include(GNUInstallDirs)
@@ -29,10 +24,16 @@ include(FeatureSummary)
 include(CompilerSettings)
 include(OMPLUtils)
 
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/bin")
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/lib")
+
 set(OMPL_CMAKE_UTIL_DIR "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules"
     CACHE FILEPATH "Path to directory with auxiliary CMake scripts for OMPL")
+set(OMPL_INCLUDE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/src;${CMAKE_CURRENT_BINARY_DIR}/src")
 set(OMPL_DEMO_INSTALL_DIR "${CMAKE_INSTALL_DATAROOTDIR}/ompl/demos"
     CACHE STRING "Relative path to directory where demos will be installed")
+
+include_directories("${OMPL_INCLUDE_DIRS}")
 
 if(MSVC)
     add_definitions(-DBOOST_ALL_NO_LIB)
@@ -47,7 +48,9 @@ set_package_properties(Boost PROPERTIES
     URL "https://www.boost.org"
     PURPOSE "Used throughout OMPL for data serialization, graphs, etc.")
 set(Boost_USE_MULTITHREADED ON)
-find_package(Boost 1.58 REQUIRED COMPONENTS serialization filesystem system program_options)
+set(Boost_NO_BOOST_CMAKE ON)
+find_package(Boost 1.58 QUIET REQUIRED COMPONENTS serialization filesystem system program_options)
+include_directories(SYSTEM ${Boost_INCLUDE_DIR})
 
 # Add support in Boost::Python for std::shared_ptr
 # This is a hack that replaces boost::shared_ptr related code with std::shared_ptr.
@@ -62,7 +65,7 @@ if (NOT Boost_VERSION_STRING)
     endif()
 endif()
 if(Boost_VERSION_STRING VERSION_LESS "1.63.0")
-    include_directories(SYSTEM "${CMAKE_CURRENT_SOURCE_DIR}/src/external")
+    include_directories("${CMAKE_CURRENT_SOURCE_DIR}/src/external")
 endif()
 
 
@@ -107,19 +110,40 @@ set_package_properties(Eigen3 PROPERTIES
     URL "http://eigen.tuxfamily.org"
     PURPOSE "A linear algebra library used throughout OMPL.")
 find_package(Eigen3 REQUIRED)
+include_directories("${EIGEN3_INCLUDE_DIR}")
+
+set_package_properties(MORSE PROPERTIES
+    URL "https://www.openrobots.org/wiki/morse"
+    PURPOSE "OMPL includes a plugin for the MORSE Robot Simulation engine.")
+find_package(MORSE QUIET)
+set(OMPL_EXTENSION_MORSE ${MORSE_FOUND})
+
+set_package_properties(ODE PROPERTIES
+    URL "http://ode.org"
+    PURPOSE "The Open Dynamics Engine can be used as a \"black box\" for kinodynamic planning.")
+find_package(ODE QUIET)
+set(OMPL_EXTENSION_ODE ${ODE_FOUND})
+if (OMPL_EXTENSION_ODE)
+  include_directories(${ODE_INCLUDE_DIRS})
+endif()
 
 set_package_properties(Triangle PROPERTIES
     URL "http://www.cs.cmu.edu/~quake/triangle.html"
     PURPOSE "Used to create triangular decompositions of polygonal 2D environments.")
 find_package(Triangle QUIET)
 set(OMPL_EXTENSION_TRIANGLE ${TRIANGLE_FOUND})
+if (OMPL_EXTENSION_TRIANGLE)
+  include_directories(${TRIANGLE_INCLUDE_DIR})
+endif()
 
 set_package_properties(flann PROPERTIES
     URL "https://github.com/mariusmuja/flann"
     PURPOSE "If detetected, FLANN can be used for nearest neighbor queries by OMPL.")
-find_package(flann CONFIG 1.9.2 QUIET)
+find_package(flann 1.8.3 QUIET)
 if (FLANN_FOUND)
     set(OMPL_HAVE_FLANN 1)
+    include_directories("${FLANN_INCLUDE_DIRS}")
+    link_directories(${FLANN_LIBRARY_DIRS})
 endif()
 
 set_package_properties(spot PROPERTIES
@@ -128,6 +152,8 @@ set_package_properties(spot PROPERTIES
 find_package(spot)
 if (spot_FOUND)
     set(OMPL_HAVE_SPOT 1)
+    include_directories("${SPOT_INCLUDE_DIRS}")
+    link_directories(${SPOT_LIBRARY_DIRS})
 endif()
 
 set_package_properties(Doxygen PROPERTIES
@@ -142,7 +168,7 @@ if(PYTHON_FOUND AND NOT Boost_VERSION_STRING VERSION_LESS "1.63.0")
         find_boost_numpy()
         if(Boost_NUMPY_LIBRARY)
             set(OMPL_HAVE_NUMPY 1)
-            include_directories(SYSTEM "${PY_NUMPY}/core/include")
+            include_directories("${PY_NUMPY}/core/include")
         endif()
     endif()
 endif()
@@ -161,7 +187,10 @@ if(NOT MSVC)
     target_link_flags(ompl)
     set(PKG_NAME "ompl")
     set(PKG_DESC "The Open Motion Planning Library")
-    set(PKG_EXTERNAL_DEPS "Eigen3::Eigen ${ompl_PKG_DEPS}")
+    set(PKG_EXTERNAL_DEPS "eigen3 ${ompl_PKG_DEPS}")
+    if(OMPL_EXTENSION_ODE)
+        set(PKG_EXTERNAL_DEPS "${PKG_EXTERNAL_DEPS}")
+    endif()
     set(PKG_OMPL_LIBS "-lompl ${ompl_LINK_FLAGS}")
     configure_file("${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules/ompl.pc.in"
                    "${CMAKE_CURRENT_BINARY_DIR}/ompl.pc" @ONLY)
@@ -170,7 +199,6 @@ if(NOT MSVC)
         COMPONENT ompl)
 endif()
 
-set(CPACK_PACKAGE_VERSION "${PROJECT_VERSION}")
 include(CMakePackageConfigHelpers)
 set(INCLUDE_INSTALL_DIR ${CMAKE_INSTALL_INCLUDEDIR})
 set(LIB_INSTALL_DIR ${CMAKE_INSTALL_LIBDIR})
@@ -187,19 +215,6 @@ install(FILES ${CMAKE_CURRENT_BINARY_DIR}/omplConfig.cmake
     ${CMAKE_CURRENT_BINARY_DIR}/omplConfigVersion.cmake
     DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/ompl/cmake
     COMPONENT ompl)
-install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules/
-    DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/ompl/cmake
-    COMPONENT ompl
-    FILES_MATCHING PATTERN "Find*.cmake")
-install(TARGETS ompl
-    EXPORT omplExport
-    DESTINATION ${CMAKE_INSTALL_LIBDIR}
-    COMPONENT ompl)
-install(EXPORT omplExport
-    NAMESPACE ompl::
-    DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/ompl/cmake)
-export(EXPORT omplExport
-    FILE "${CMAKE_CURRENT_BINARY_DIR}/omplExport.cmake")
 
 # script to install ompl on Ubuntu
 configure_file("${CMAKE_CURRENT_SOURCE_DIR}/install-ompl-ubuntu.sh.in"
@@ -222,8 +237,7 @@ if (OMPL_REGISTRATION)
         file(WRITE "${CMAKE_CURRENT_SOURCE_DIR}/.registered" "")
         find_package(Python QUIET)
         if (PYTHON_FOUND)
-            execute_process(COMMAND ${CMAKE_COMMAND} -E env
-               TERM="" "${PYTHON_EXEC}" "-m" "webbrowser" "https://ompl.kavrakilab.org/core/register.html"
+            execute_process(COMMAND "${PYTHON_EXEC}" "-m" "webbrowser" "https://ompl.kavrakilab.org/core/register.html"
                 OUTPUT_QUIET ERROR_QUIET)
         endif()
     endif()
@@ -262,3 +276,4 @@ endif()
 # See CMakeModules/OMPLUtils.cmake and scripts/docker for details
 add_docker_target(ompl)
 add_docker_target(plannerarena scripts)
+

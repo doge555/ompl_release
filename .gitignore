@@ -1,9 +1,14 @@
 .registered
+.cache
 .DS_Store
 *.swp
+.vscode/
 build/
 bin/
 lib/
+runs
+models
+samples
 *.pcd
 *.pyc
 *.so
@@ -11,7 +16,3 @@ lib/
 py-bindings/ompl/app/
 py-bindings/ompl/bindings_generator.py
 !py-bindings/ompl/bindings_generator.py.in
-.vscode
-*.so.*
-*.egg-info
-*.pyi

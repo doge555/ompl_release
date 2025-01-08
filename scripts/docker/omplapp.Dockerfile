@@ -1,14 +1,13 @@
-FROM ubuntu:jammy AS builder
+FROM ubuntu:focal AS builder
 # avoid interactive configuration dialog from tzdata, which gets pulled in
 # as a dependency
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && \
     apt-get install -y \
-        build-essential \
+        build-essential  \
         castxml \
         cmake \
         freeglut3-dev \
-        git \
         libassimp-dev \
         libboost-filesystem-dev \
         libboost-numpy-dev \
@@ -22,8 +21,10 @@ RUN apt-get update && \
         libexpat1 \
         libfcl-dev \
         libflann-dev \
+        libode-dev \
+        libssl1.1 \
+        libtinfo5 \
         libtriangle-dev \
-        ninja-build \
         pkg-config \
         python3-celery \
         python3-dev \
@@ -32,35 +33,34 @@ RUN apt-get update && \
         python3-opengl \
         python3-pip \
         python3-pyqt5.qtopengl \
-        pypy3 \
         wget && \
     # Install spot
-    wget -O /etc/apt/trusted.gpg.d/lrde.gpg https://www.lrde.epita.fr/repo/debian.gpg && \
+    wget --no-check-certificate -q -O- https://www.lrde.epita.fr/repo/debian.gpg | apt-key add - && \
     echo 'deb http://www.lrde.epita.fr/repo/debian/ stable/' >> /etc/apt/sources.list && \
     apt-get update && \
     apt-get install -y libspot-dev && \
-    # see https://github.com/mcfletch/pyopengl/issues/74
-    pip3 install pygccxml pyplusplus git+https://github.com/mcfletch/pyopengl.git@227f9c66976d9f5dadf62b9a97e6beaec84831ca#subdirectory=accelerate
+    # Install pypy3
+    wget --no-check-certificate -q -O- https://downloads.python.org/pypy/pypy3.7-v7.3.3-linux64.tar.bz2 |tar jxf - && \
+    pip3 install pygccxml pyplusplus PyOpenGL-accelerate
 COPY . /omplapp
 WORKDIR /build
 RUN cmake \
         -DPYTHON_EXEC=/usr/bin/python3 \
         -DOMPL_REGISTRATION=OFF \
         -DCMAKE_INSTALL_PREFIX=/usr \
-        -G Ninja \
+        -DPYPY=/pypy3.7-v7.3.3-linux64/bin/pypy3.7 \
         /omplapp && \
-    ninja update_bindings -j `nproc` && \
-    ninja -j `nproc` && \
-    ninja install
+    make update_bindings -j `nproc` && \
+    make -j `nproc` && \
+    make install
 
-FROM ubuntu:jammy
+FROM ubuntu:focal
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && \
     apt-get install -y \
-        clang \
+        build-essential  \
         cmake \
         freeglut3-dev \
-        git \
         libassimp-dev \
         libboost-filesystem-dev \
         libboost-numpy-dev \
@@ -72,8 +72,8 @@ RUN apt-get update && \
         libeigen3-dev \
         libfcl-dev \
         libflann-dev \
+        libode-dev \
         libtriangle-dev \
-        ninja-build \
         pkg-config \
         python-celery-common \
         python3-celery \
@@ -86,13 +86,12 @@ RUN apt-get update && \
         uwsgi-plugin-python3 \
         wget && \
     # Install spot
-    wget -O /etc/apt/trusted.gpg.d/lrde.gpg https://www.lrde.epita.fr/repo/debian.gpg && \
+    wget --no-check-certificate -q -O - https://www.lrde.epita.fr/repo/debian.gpg | apt-key add - && \
     echo 'deb http://www.lrde.epita.fr/repo/debian/ stable/' >> /etc/apt/sources.list && \
     apt-get update && \
     apt-get install -y libspot-dev && \
     # install PyOpenGL
-    # see https://github.com/mcfletch/pyopengl/issues/74
-    pip install git+https://github.com/mcfletch/pyopengl.git@227f9c66976d9f5dadf62b9a97e6beaec84831ca#subdirectory=accelerate
+    pip3 install PyOpenGL-accelerate
 
 COPY --from=builder /usr /usr
 RUN useradd -ms /bin/bash ompl

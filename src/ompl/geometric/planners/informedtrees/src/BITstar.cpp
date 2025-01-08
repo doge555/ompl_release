@@ -62,6 +62,13 @@ namespace ompl
 {
     namespace geometric
     {
+        void BITstar::setLocalSeed(std::uint_fast32_t localSeed)
+        {
+            graphPtr_->setLocalSeed(localSeed);
+        }
+
+        /////////////////////////////////////////////////////////////////////////////////////////////
+        // Public functions:
         BITstar::BITstar(const ompl::base::SpaceInformationPtr &si, const std::string &name /*= "BITstar"*/)
           : ompl::base::Planner(si, name)
         {
@@ -91,11 +98,8 @@ namespace ompl
             Planner::declareParam<unsigned int>("samples_per_batch", this, &BITstar::setSamplesPerBatch,
                                                 &BITstar::getSamplesPerBatch, "1:1:1000000");
             Planner::declareParam<bool>("use_k_nearest", this, &BITstar::setUseKNearest, &BITstar::getUseKNearest,
-                                        "0,"
-                                        "1");
-            Planner::declareParam<bool>("use_graph_pruning", this, &BITstar::setPruning, &BITstar::getPruning,
-                                        "0,"
-                                        "1");
+                                        "0,1");
+            Planner::declareParam<bool>("use_graph_pruning", this, &BITstar::setPruning, &BITstar::getPruning, "0,1");
             Planner::declareParam<double>("prune_threshold_as_fractional_cost_change", this,
                                           &BITstar::setPruneThresholdFraction, &BITstar::getPruneThresholdFraction,
                                           "0.0:0.01:1.0");
@@ -112,6 +116,8 @@ namespace ompl
                                         &BITstar::getStrictQueueOrdering, "0,1");
             Planner::declareParam<bool>("find_approximate_solutions", this, &BITstar::setConsiderApproximateSolutions,
                                         &BITstar::getConsiderApproximateSolutions, "0,1");
+            Planner::declareParam<unsigned int>("set_max_num_goals", this, &BITstar::setMaxNumberOfGoals,
+                                                &BITstar::getMaxNumberOfGoals, "1:1:1000");
 
             // Register my progress info:
             addPlannerProgressProperty("best cost DOUBLE", [this] { return bestCostProgressProperty(); });
@@ -1294,6 +1300,16 @@ namespace ompl
         bool BITstar::getConsiderApproximateSolutions() const
         {
             return graphPtr_->getTrackApproximateSolutions();
+        }
+
+        void BITstar::setMaxNumberOfGoals(unsigned int numberOfGoals)
+        {
+            graphPtr_->setMaxNumberOfGoals(numberOfGoals);
+        }
+
+        unsigned int BITstar::getMaxNumberOfGoals() const
+        {
+            return graphPtr_->getMaxNumberOfGoals();
         }
 
         void BITstar::setAverageNumOfAllowedFailedAttemptsWhenSampling(std::size_t number)

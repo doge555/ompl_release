@@ -55,6 +55,5 @@ void ompl::base::IterationTerminationCondition::reset()
 
 ompl::base::IterationTerminationCondition::operator ompl::base::PlannerTerminationCondition()
 {
-    auto &c = *this;
-    return PlannerTerminationCondition([c]() mutable { return c.eval(); });
+    return PlannerTerminationCondition([this] { return eval(); });
 }

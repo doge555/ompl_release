@@ -37,6 +37,9 @@
 #include "ompl/base/objectives/PathLengthOptimizationObjective.h"
 #include <memory>
 #include "ompl/base/samplers/informed/PathLengthDirectInfSampler.h"
+#include "ompl/base/samplers/informed/RejectionInfSampler.h"
+#include "ompl/base/samplers/informed/AdaptivePathLengthDirectInfSampler.h"
+#include "ompl/base/samplers/informed/AdaptiveRejectionInfSampler.h"
 
 ompl::base::PathLengthOptimizationObjective::PathLengthOptimizationObjective(const SpaceInformationPtr &si)
   : ompl::base::OptimizationObjective(si)
@@ -72,7 +75,37 @@ ompl::base::Cost ompl::base::PathLengthOptimizationObjective::motionCostBestEsti
 ompl::base::InformedSamplerPtr ompl::base::PathLengthOptimizationObjective::allocInformedStateSampler(
     const ProblemDefinitionPtr &probDefn, unsigned int maxNumberCalls) const
 {
-    // Make the direct path-length informed sampler and return. If OMPL was compiled with Eigen, a direct version is
-    // available, if not a rejection-based technique can be used
-    return std::make_shared<PathLengthDirectInfSampler>(probDefn, maxNumberCalls);
+    // Try to use a direct sampler if the goal is of approriate type, use a rejection sampler otherwise.
+    const auto goalType = probDefn->getGoal()->getType();
+    if (goalType == ompl::base::GoalType::GOAL_STATE
+        || goalType == ompl::base::GoalType::GOAL_STATES
+        || goalType == ompl::base::GoalType::GOAL_LAZY_SAMPLES)
+    {
+        // If OMPL was compiled with Eigen, a direct version is available, if not a rejection-based technique can be
+        // used.
+        return std::make_shared<PathLengthDirectInfSampler>(probDefn, maxNumberCalls);
+    }
+    else
+    {
+        return std::make_shared<RejectionInfSampler>(probDefn, maxNumberCalls);
+    }
+}
+
+ompl::base::AdaptiveSamplerPtr ompl::base::PathLengthOptimizationObjective::allocAdaptiveStateSampler(
+    const ProblemDefinitionPtr &probDefn, unsigned int maxNumberCalls) const
+{
+    // Try to use a direct sampler if the goal is of approriate type, use a rejection sampler otherwise.
+    const auto goalType = probDefn->getGoal()->getType();
+    if (goalType == ompl::base::GoalType::GOAL_STATE
+        || goalType == ompl::base::GoalType::GOAL_STATES
+        || goalType == ompl::base::GoalType::GOAL_LAZY_SAMPLES)
+    {
+        // If OMPL was compiled with Eigen, a direct version is available, if not a rejection-based technique can be
+        // used.
+        return std::make_shared<AdaptivePathLengthDirectInfSampler>(probDefn, maxNumberCalls);
+    }
+    else
+    {
+        return std::make_shared<AdaptiveRejectionInfSampler>(probDefn, maxNumberCalls);
+    }
 }

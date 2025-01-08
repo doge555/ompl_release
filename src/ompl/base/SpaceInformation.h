@@ -96,6 +96,12 @@ namespace ompl
                 return stateValidityChecker_->isValid(state);
             }
 
+            // /** \brief Check if a given state is valid or not */
+            // bool isValid(const State *state, std::vector<std::shared_ptr<State>> &states)
+            // {
+            //     return stateValidityChecker_->isValid(state, states);
+            // }
+
             /** \brief Return the instance of the used state space */
             const StateSpacePtr &getStateSpace() const
             {

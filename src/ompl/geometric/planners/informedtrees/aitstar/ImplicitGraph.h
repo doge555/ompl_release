@@ -153,6 +153,16 @@ namespace ompl
                 /** \brief Get the number of nearest neighbor calls. */
                 std::size_t getNumberOfNearestNeighborCalls() const;
 
+                /** \brief Set the seed used by the RNG and the StateSampler. The state sampler must already be
+                 * allocated, as a new state sampler will not take this seed. */
+                void setLocalSeed(std::uint_fast32_t localSeed)
+                {
+                    if (sampler_)
+                    {
+                        sampler_->setLocalSeed(localSeed);
+                    }
+                };
+
             private:
                 /** \brief Computes the number of samples in the informed set. */
                 std::size_t computeNumberOfSamplesInInformedSet() const;
@@ -190,7 +200,7 @@ namespace ompl
                 /** \brief Whether to use a k-nearest RGG. If false, AIT* uses an r-disc RGG. */
                 bool useKNearest_{true};
 
-                /** \brief The maximum number of goals BIT* will sample. */
+                /** \brief The maximum number of goals AIT* will sample. */
                 unsigned int maxNumGoals_{10u};
 
                 /** \brief The radius that defines the neighborhood of a vertex if using an r-disc graph. */

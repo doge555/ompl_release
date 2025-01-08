@@ -1,36 +1,36 @@
 /*********************************************************************
- * Software License Agreement (BSD License)
- *
- *  Copyright (c) 2013, Rutgers the State University of New Jersey, New Brunswick
- *  All Rights Reserved.
- *
- *  Redistribution and use in source and binary forms, with or without
- *  modification, are permitted provided that the following conditions
- *  are met:
- *
- *   * Redistributions of source code must retain the above copyright
- *     notice, this list of conditions and the following disclaimer.
- *   * Redistributions in binary form must reproduce the above
- *     copyright notice, this list of conditions and the following
- *     disclaimer in the documentation and/or other materials provided
- *     with the distribution.
- *   * Neither the name of Rutgers University nor the names of its
- *     contributors may be used to endorse or promote products derived
- *     from this software without specific prior written permission.
- *
- *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- *  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
- *  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
- *  FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
- *  COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
- *  INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
- *  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- *  LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
- *  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
- *  LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
- *  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- *  POSSIBILITY OF SUCH DAMAGE.
- *********************************************************************/
+* Software License Agreement (BSD License)
+*
+*  Copyright (c) 2013, Rutgers the State University of New Jersey, New Brunswick
+*  All Rights Reserved.
+*
+*  Redistribution and use in source and binary forms, with or without
+*  modification, are permitted provided that the following conditions
+*  are met:
+*
+*   * Redistributions of source code must retain the above copyright
+*     notice, this list of conditions and the following disclaimer.
+*   * Redistributions in binary form must reproduce the above
+*     copyright notice, this list of conditions and the following
+*     disclaimer in the documentation and/or other materials provided
+*     with the distribution.
+*   * Neither the name of Rutgers University nor the names of its
+*     contributors may be used to endorse or promote products derived
+*     from this software without specific prior written permission.
+*
+*  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+*  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+*  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+*  FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+*  COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+*  INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+*  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+*  LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+*  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+*  LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+*  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+*  POSSIBILITY OF SUCH DAMAGE.
+*********************************************************************/
 
 /* Author: Andrew Dobson */
 
@@ -75,8 +75,14 @@ ompl::geometric::SPARStwo::SPARStwo(const base::SpaceInformationPtr &si)
     Planner::declareParam<unsigned int>("max_failures", this, &SPARStwo::setMaxFailures, &SPARStwo::getMaxFailures,
                                         "100:10:3000");
 
-    addPlannerProgressProperty("iterations INTEGER", [this] { return getIterationCount(); });
-    addPlannerProgressProperty("best cost REAL", [this] { return getBestCost(); });
+    addPlannerProgressProperty("iterations INTEGER", [this]
+                               {
+                                   return getIterationCount();
+                               });
+    addPlannerProgressProperty("best cost REAL", [this]
+                               {
+                                   return getBestCost();
+                               });
 }
 
 ompl::geometric::SPARStwo::~SPARStwo()
@@ -89,7 +95,10 @@ void ompl::geometric::SPARStwo::setup()
     Planner::setup();
     if (!nn_)
         nn_.reset(tools::SelfConfig::getDefaultNearestNeighbors<Vertex>(this));
-    nn_->setDistanceFunction([this](const Vertex a, const Vertex b) { return distanceFunction(a, b); });
+    nn_->setDistanceFunction([this](const Vertex a, const Vertex b)
+                             {
+                                 return distanceFunction(a, b);
+                             });
     double maxExt = si_->getMaximumExtent();
     sparseDelta_ = sparseDeltaFraction_ * maxExt;
     denseDelta_ = denseDeltaFraction_ * maxExt;
@@ -221,7 +230,10 @@ void ompl::geometric::SPARStwo::constructRoadmap(const base::PlannerTerminationC
     if (stopOnMaxFail)
     {
         resetFailures();
-        base::PlannerTerminationCondition ptcOrFail([this, &ptc] { return ptc || reachedFailureLimit(); });
+        base::PlannerTerminationCondition ptcOrFail([this, &ptc]
+                                                    {
+                                                        return ptc || reachedFailureLimit();
+                                                    });
         constructRoadmap(ptcOrFail);
     }
     else
@@ -339,11 +351,20 @@ ompl::base::PlannerStatus ompl::geometric::SPARStwo::solve(const base::PlannerTe
     addedSolution_ = false;
     resetFailures();
     base::PathPtr sol;
-    base::PlannerTerminationCondition ptcOrFail([this, &ptc] { return ptc || reachedFailureLimit(); });
-    std::thread slnThread([this, &ptcOrFail, &sol] { checkForSolution(ptcOrFail, sol); });
+    base::PlannerTerminationCondition ptcOrFail([this, &ptc]
+                                                {
+                                                    return ptc || reachedFailureLimit();
+                                                });
+    std::thread slnThread([this, &ptcOrFail, &sol]
+                          {
+                              checkForSolution(ptcOrFail, sol);
+                          });
 
     // Construct planner termination condition which also takes M into account
-    base::PlannerTerminationCondition ptcOrStop([this, &ptc] { return ptc || reachedTerminationCriterion(); });
+    base::PlannerTerminationCondition ptcOrStop([this, &ptc]
+                                                {
+                                                    return ptc || reachedTerminationCriterion();
+                                                });
     constructRoadmap(ptcOrStop);
 
     // Ensure slnThread is ceased before exiting solve
@@ -352,14 +373,10 @@ ompl::base::PlannerStatus ompl::geometric::SPARStwo::solve(const base::PlannerTe
     OMPL_INFORM("%s: Created %u states", getName().c_str(), boost::num_vertices(g_) - nrStartStates);
 
     if (sol)
-    {
         pdef_->addSolutionPath(sol, false, -1.0, getName());
-        return base::PlannerStatus::EXACT_SOLUTION;
-    }
-    else
-    {
-        return reachedFailureLimit() ? base::PlannerStatus::INFEASIBLE : base::PlannerStatus::TIMEOUT;
-    }
+
+    // Return true if any solution was found.
+    return sol ? base::PlannerStatus::EXACT_SOLUTION : base::PlannerStatus::TIMEOUT;
 }
 
 void ompl::geometric::SPARStwo::checkForSolution(const base::PlannerTerminationCondition &ptc, base::PathPtr &solution)
@@ -516,7 +533,7 @@ bool ompl::geometric::SPARStwo::checkAddPath(Vertex v)
                     }
 
                     psimp_->reduceVertices(*p, 10);
-                    psimp_->partialShortcutPath(*p, 50);
+                    psimp_->shortcutPath(*p, 50);
 
                     if (p->checkAndRepair(100).second)
                     {
@@ -795,14 +812,23 @@ ompl::base::PathPtr ompl::geometric::SPARStwo::constructSolution(const Vertex st
 
     try
     {
-        boost::astar_search(
-            g_, start, [this, goal](Vertex v) { return costHeuristic(v, goal); },
-            boost::predecessor_map(prev)
-                .distance_compare([this](base::Cost c1, base::Cost c2) { return opt_->isCostBetterThan(c1, c2); })
-                .distance_combine([this](base::Cost c1, base::Cost c2) { return opt_->combineCosts(c1, c2); })
-                .distance_inf(opt_->infiniteCost())
-                .distance_zero(opt_->identityCost())
-                .visitor(AStarGoalVisitor<Vertex>(goal)));
+        boost::astar_search(g_, start,
+                            [this, goal](Vertex v)
+                            {
+                                return costHeuristic(v, goal);
+                            },
+                            boost::predecessor_map(prev)
+                                .distance_compare([this](base::Cost c1, base::Cost c2)
+                                                  {
+                                                      return opt_->isCostBetterThan(c1, c2);
+                                                  })
+                                .distance_combine([this](base::Cost c1, base::Cost c2)
+                                                  {
+                                                      return opt_->combineCosts(c1, c2);
+                                                  })
+                                .distance_inf(opt_->infiniteCost())
+                                .distance_zero(opt_->identityCost())
+                                .visitor(AStarGoalVisitor<Vertex>(goal)));
     }
     catch (AStarFoundGoal &)
     {

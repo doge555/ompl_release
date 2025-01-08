@@ -39,7 +39,7 @@
 
 #include "ompl/util/RandomNumbers.h"
 #include <functional>
-#include <Eigen/Core>
+#include <eigen3/Eigen/Core>
 
 namespace ompl
 {

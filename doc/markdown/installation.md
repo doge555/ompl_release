@@ -10,7 +10,6 @@
     <li class="nav-item"><a class="nav-link" id="linux-tab" data-toggle="pill" href="#linux" role="tab" aria-controls="linux" aria-selected="false">Linux (generic)</a></li>
     <li class="nav-item"><a class="nav-link" id="osx-tab" data-toggle="pill" href="#osx" role="tab" aria-controls="macos" aria-selected="false">macOS</a></li>
     <li class="nav-item"><a class="nav-link" id="windows-tab" data-toggle="pill" href="#windows" role="tab" aria-controls="windows" aria-selected="false">MS Windows</a></li>
-    <li class="nav-item"><a class="nav-link" id="cmake-fetch-tab" data-toggle="pill" href="#cmakefetch" role="tab" aria-controls="cmakefetch" aria-selected="false">CMake Fetchcontent</a></li>
   </ul>
 </div>
 
@@ -65,9 +64,9 @@ sudo apt-get install ros-`rosversion -d`-ompl</pre>
   <!-- Linux (generic) -->
   <div class="tab-pane fade" id="linux" role="tabpanel" aria-labelledby="linux-tab">
     <h2>Linux (generic)</h2>
-    <p>OMPL requires <a href="https://www.boost.org">Boost</a> (version 1.58 or higher), <a href="https://www.cmake.org">CMake</a> (version 3.5 or higher), and <a href="http://eigen.tuxfamily.org">Eigen</a> (version 3.3 or higher).
+    <p>OMPL requires <a href="https://www.boost.org">Boost</a> (version 1.58 or higher), <a href="https://www.cmake.org">CMake</a> (version 3.5 or higher), and <a href="http://eigen.tuxfamily.org">Eigen</a> (version 3.3 or higher). Some additional features are available if <a href="http://www.ode.org">ODE</a> is installed.
     To be able to generate python bindings you need to install the <a href="https://www.python.org">Python</a> library and header files and <a href="installPyPlusPlus.html">Py++</a>.
-    Finally, you need a C++17 compiler (g++-7 or newer).</p>
+    Finally, you need a C++14 compiler (g++-5 or newer).</p>
     <p>Once the dependencies are installed, OMPL can then be compiled like so:</p>
     <ul>
     <li>Create a build directory and run cmake: <pre class="fragment">cd ompl
@@ -112,22 +111,6 @@ cmake ../..</pre></li>
     It is recommended to use <a href="https://vcpkg.readthedocs.io/en/latest/">vcpkg</a>, a Microsoft-supported package manager for open source software. Once you have vcpkg installed, you can install OMPL like so:
     <pre class="fragment">vcpkg install ompl</pre>
     Note that the vcpkg installation does not include Python bindings.
-  </div>
-  <!-- CMake Fetchcontent -->
-  <div class="tab-pane fade" id="cmakefetch" role="tabpanel" aria-labelledby="cmake-fetch-tab">
-    <h2>CMake Fetchcontent</h2>
-    If you want to build ompl from source as part of another repository, FetchContent is one approach. In CMake, you can fetch and link like so:
-    <pre class="fragment">
-include(FetchContent)
-FetchContent_Declare(
-  ompl
-  GIT_REPOSITORY https://github.com/ompl/ompl.git
-)
-FetchContent_MakeAvailable(ompl)
-
-add_executable(main main.cpp)
-target_link_libraries(main PRIVATE ompl::ompl)
-    </pre>
   </div>
 </div>
 \endhtmlonly

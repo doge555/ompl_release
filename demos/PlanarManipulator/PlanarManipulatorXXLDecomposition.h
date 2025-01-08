@@ -37,7 +37,7 @@
 #ifndef PLANAR_MANIPULATOR_XXL_DECOMPOSITION_
 #define PLANAR_MANIPULATOR_XXL_DECOMPOSITION_
 
-#include <Eigen/Dense>
+#include <eigen3/Eigen/Dense>
 #include <ompl/base/SpaceInformation.h>
 #include <ompl/geometric/planners/xxl/XXLPlanarDecomposition.h>
 #include "PlanarManipulator.h"

@@ -58,6 +58,12 @@ namespace ompl
                 return v_;
             }
 
+            /** \brief the value of the cost */
+            void setValue(double cost)
+            {
+                v_ = cost;
+            }
+
         private:
             /** \brief The value of the cost */
             double v_;

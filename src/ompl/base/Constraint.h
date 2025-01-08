@@ -42,8 +42,8 @@
 #include "ompl/util/ClassForward.h"
 #include "ompl/util/Exception.h"
 
-#include <Eigen/Core>
-#include <Eigen/Dense>
+#include <eigen3/Eigen/Core>
+#include <eigen3/Eigen/Dense>
 #include <utility>
 
 namespace ompl

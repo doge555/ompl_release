@@ -124,6 +124,12 @@ namespace ompl
             BiDirMotionPtrs motions;
             nn_->list(motions);
 
+            int numStartNodes = 0;
+            int numGoalNodes = 0;
+            int numEdges = 0;
+            int numFwdEdges = 0;
+            int numRevEdges = 0;
+
             int fwd_tree_tag = 1;
             int rev_tree_tag = 2;
 
@@ -134,10 +140,21 @@ namespace ompl
                 // For samples added to the fwd tree, add incoming edges (from fwd tree parent)
                 if (inFwdTree)
                 {
-                    if (motion->parent_[FWD] != nullptr)
+                    if (motion->parent_[FWD] == nullptr)
                     {
-                        data.addEdge(base::PlannerDataVertex(motion->parent_[FWD]->getState(), fwd_tree_tag),
-                                     base::PlannerDataVertex(motion->getState(), fwd_tree_tag));
+                        // Motion is a forward tree root node
+                        ++numStartNodes;
+                    }
+                    else
+                    {
+                        bool success =
+                            data.addEdge(base::PlannerDataVertex(motion->parent_[FWD]->getState(), fwd_tree_tag),
+                                         base::PlannerDataVertex(motion->getState(), fwd_tree_tag));
+                        if (success)
+                        {
+                            ++numFwdEdges;
+                            ++numEdges;
+                        }
                     }
                 }
             }
@@ -150,10 +167,21 @@ namespace ompl
                 // For samples added to a tree, add incoming edges (from fwd tree parent)
                 if (inRevTree)
                 {
-                    if (motion->parent_[REV] != nullptr)
+                    if (motion->parent_[REV] == nullptr)
                     {
-                        data.addEdge(base::PlannerDataVertex(motion->getState(), rev_tree_tag),
-                                     base::PlannerDataVertex(motion->parent_[REV]->getState(), rev_tree_tag));
+                        // Motion is a reverse tree root node
+                        ++numGoalNodes;
+                    }
+                    else
+                    {
+                        bool success =
+                            data.addEdge(base::PlannerDataVertex(motion->getState(), rev_tree_tag),
+                                         base::PlannerDataVertex(motion->parent_[REV]->getState(), rev_tree_tag));
+                        if (success)
+                        {
+                            ++numRevEdges;
+                            ++numEdges;
+                        }
                     }
                 }
             }
