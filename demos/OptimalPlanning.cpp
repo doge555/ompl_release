@@ -46,13 +46,7 @@
 #include <ompl/geometric/planners/informedtrees/AITstar.h>
 #include <ompl/geometric/planners/informedtrees/BITstar.h>
 #include <ompl/geometric/planners/informedtrees/EITstar.h>
-#include <ompl/geometric/planners/informedtrees/FITstar.h>
-#include <ompl/geometric/planners/informedtrees/SlideFITstar.h>
-#include <ompl/geometric/planners/informedtrees/DITstar.h>
-#include <ompl/geometric/planners/informedtrees/FDITstar.h>
-#include <ompl/geometric/planners/informedtrees/MSTstar.h>
 #include <ompl/geometric/planners/informedtrees/MITstar.h>
-#include <ompl/geometric/planners/informedtrees/GITstar.h>
 #include <ompl/geometric/planners/informedtrees/EIRMstar.h>
 #include <ompl/geometric/planners/cforest/CForest.h>
 #include <ompl/geometric/planners/fmt/FMT.h>
@@ -83,13 +77,7 @@ enum optimalPlanner
     PLANNER_BITSTAR,
     PLANNER_CFOREST,
     PLANNER_EITSTAR,
-    PLANNER_FITSTAR,
-    PLANNER_SFITSTAR,
-    PLANNER_DITSTAR,
-    PLANNER_FDITSTAR,
-    PLANNER_MSTSTAR,
     PLANNER_MITSTAR,
-    PLANNER_GITSTAR,
     PLANNER_EIRMSTAR,
     PLANNER_FMTSTAR,
     PLANNER_INF_RRTSTAR,
@@ -188,39 +176,9 @@ ob::PlannerPtr allocatePlanner(ob::SpaceInformationPtr si, optimalPlanner planne
             return std::make_shared<og::EITstar>(si);
             break;
         }
-        case PLANNER_FITSTAR:
-        {
-            return std::make_shared<og::FITstar>(si);
-            break;
-        }
-        case PLANNER_SFITSTAR:
-        {
-            return std::make_shared<og::SFITstar>(si);
-            break;
-        }
-        case PLANNER_DITSTAR:
-        {
-            return std::make_shared<og::DITstar>(si);
-            break;
-        }
-        case PLANNER_FDITSTAR:
-        {
-            return std::make_shared<og::FDITstar>(si);
-            break;
-        }
-		case PLANNER_MSTSTAR:
-        {
-            return std::make_shared<og::MSTstar>(si);
-            break;
-        }
         case PLANNER_MITSTAR:
         {
             return std::make_shared<og::MITstar>(si);
-            break;
-        }
-        case PLANNER_GITSTAR:
-        {
-            return std::make_shared<og::GITstar>(si);
             break;
         }
         case PLANNER_EIRMSTAR:
@@ -490,7 +448,7 @@ bool argParse(int argc, char **argv, double *runTimePtr, optimalPlanner *planner
         "must be greater than 0.")("planner,p", bpo::value<std::string>()->default_value("RRTstar"),
                                    "(Optional) Specify the optimal planner to use, defaults to RRTstar if not given. "
                                    "Valid options are AITstar, "
-                                   "BFMTstar, BITstar, CForest, EITstar, FITstar, SFITstar, DITstar, FDITstar, MITstar,GITstar, EIRMstar, FMTstar, InformedRRTstar, MSTstar, PRMstar, RRTstar, "
+                                   "BFMTstar, BITstar, CForest, EITstar, MITstar, EIRMstar, FMTstar, InformedRRTstar, PRMstar, RRTstar, "
                                    "and SORRTstar.")  // Alphabetical order
         ("objective,o", bpo::value<std::string>()->default_value("PathLength"),
          "(Optional) Specify the optimization objective, defaults to PathLength if not given. Valid options are "
@@ -566,33 +524,9 @@ bool argParse(int argc, char **argv, double *runTimePtr, optimalPlanner *planner
     {
         *plannerPtr = PLANNER_EITSTAR;
     }
-    else if (boost::iequals("FITstar", plannerStr))
-    {
-        *plannerPtr = PLANNER_FITSTAR;
-    }
-    else if (boost::iequals("SFITstar", plannerStr))
-    {
-        *plannerPtr = PLANNER_SFITSTAR;
-    }
-    else if (boost::iequals("DITstar", plannerStr))
-    {
-        *plannerPtr = PLANNER_DITSTAR;
-    }
-    else if (boost::iequals("FDITstar", plannerStr))
-    {
-        *plannerPtr = PLANNER_FDITSTAR;
-    }
-    else if (boost::iequals("MSTstar", plannerStr))
-    {
-        *plannerPtr = PLANNER_MSTSTAR;
-    }
     else if (boost::iequals("MITstar", plannerStr))
     {
         *plannerPtr = PLANNER_MITSTAR;
-    }
-    else if (boost::iequals("GITstar", plannerStr))
-    {
-        *plannerPtr = PLANNER_GITSTAR;
     }
     else if (boost::iequals("EIRMstar", plannerStr))
     {

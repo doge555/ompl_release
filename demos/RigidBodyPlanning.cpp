@@ -36,8 +36,7 @@
 
 #include <ompl/base/SpaceInformation.h>
 #include <ompl/base/spaces/SE3StateSpace.h>
-#include <ompl/geometric/planners/informedtrees/BYDstar.h>
-#include <ompl/geometric/planners/informedtrees/DITstar.h>
+#include <ompl/geometric/planners/informedtrees/MITstar.h>
 #include <ompl/geometric/SimpleSetup.h>
 
 #include <ompl/config.h>
@@ -97,8 +96,8 @@ void plan()
     pdef->setStartAndGoalStates(start, goal);
 
     // create a planner for the defined space
-    auto planner(std::make_shared<og::DITstar>(si));
-    std::cout << "DIT" << std::endl;
+    auto planner(std::make_shared<og::MITstar>(si));
+    std::cout << "MIT" << std::endl;
 
     // set the problem we are trying to solve for the planner
     planner->setProblemDefinition(pdef);
