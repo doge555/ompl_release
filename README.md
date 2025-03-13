@@ -19,14 +19,23 @@ The following dependencies are optional:
 * [Py++](https://github.com/ompl/ompl/blob/main/doc/markdown/installPyPlusPlus.md) (needed to generate Python bindings)
 * [Doxygen](http://www.doxygen.org) (needed to create a local copy of the documentation at
   https://ompl.kavrakilab.org/core)
-* [Planner Developer Tools](https://robotic-esp.com/)(recommended to check the documentation at
-https://robotic-esp.com/papers/gammell_empp22.pdf) (released version)
-* [Moveit!](https://github.com/moveit/moveit)(recommended to check the documentation at
-  https://moveit.ai/) (or Moveit2)
-* [OpenRAVE](https://github.com/rdiankov/openrave)(recommended to check the documentation at
-https://openrave.org/) (released version)
-* [Ompl Benchmark Plotter](https://github.com/aorthey/ompl_benchmark_plotter)(recommended to check the git repos for benchmark) (released version)
 
+The following dependencies are **highly recommend**:
+* [Planner Developer Tools (PDT)](https://robotic-esp.com/) (recommended to check the documentation at
+https://robotic-esp.com/papers/gammell_empp22.pdf) (released version)
+* [Moveit!](https://github.com/moveit/moveit) (recommended to check the documentation at
+  https://moveit.ai/) (or Moveit2)
+* [OpenRAVE](https://github.com/rdiankov/openrave) (recommended to check the documentation at
+https://openrave.org/) (released version)
+* [Ompl Benchmark Plotter](https://github.com/aorthey/ompl_benchmark_plotter) (recommended to check the git repos for benchmark) (released version)
+
+To change the iteration time lagging in PDT, replace the following condition in **RandomGeomrtricGraph.cpp**:
+
+   *while (newSamples_.size() < numNewStates && !terminationCondition);*
+    
+  $\Downarrow$ $\Downarrow$ $\Downarrow$ $\Downarrow$ $\Downarrow$ $\Downarrow$
+
+   *while (newSamples_.size() < numNewStates);*
 
 ## Installation of OPENRAVE
 
