@@ -29,7 +29,7 @@ https://robotic-esp.com/papers/gammell_empp22.pdf) (released version)
 https://openrave.org/) (released version)
 * [Ompl Benchmark Plotter](https://github.com/aorthey/ompl_benchmark_plotter) (recommended to check the git repos for benchmark) (released version)
 
-To change the iteration time lagging in PDT, replace the following condition in **RandomGeomrtricGraph.cpp**:
+To change the iteration time lagging in PDT, replace the following condition in **RandomGeometricGraph.cpp**:
 
    *while (newSamples_.size() < numNewStates && !terminationCondition);*
     
