@@ -37,6 +37,20 @@ To change the iteration time lagging in PDT, replace the following condition in 
 
    *while (newSamples_.size() < numNewStates);*
 
+If you found this research useful for your own work, please use the following citation:
+
+    @ARTICLE{MIT_2025,
+      author={Zhang, Liding and Cai, Kuanqi and Zhang, Yu and Bing, Zhenshan and Wang, Chaoqun and Wu, Fan and Haddadin, Sami and Knoll, Alois},
+      journal={IEEE Transactions on Automation Science and Engineering}, 
+      title={Estimated Informed Anytime Search for Sampling-Based Planning via Adaptive Sampler}, 
+      year={2025},
+      volume={22},
+      number={},
+      pages={18580-18593},
+      doi={10.1109/TASE.2025.3590084},
+      ISSN={1558-3783},
+      month={},}
+
 ## Installation of OPENRAVE
 
 install python 2.7
