@@ -4,8 +4,7 @@ The Open Motion Planning Library (OMPL)
 Linux / macOS [![Build Status](https://travis-ci.org/ompl/ompl.svg?branch=main)](https://travis-ci.org/ompl/ompl)
 Windows [![Build status](https://ci.appveyor.com/api/projects/status/valuv9sabye1y35n/branch/main?svg=true)](https://ci.appveyor.com/project/mamoll/ompl/branch/main)
 
-Visit the [OMPL installation page](https://ompl.kavrakilab.org/core/installation.html) for
-detailed installation instructions.
+Please Visit the [OMPL installation page](https://ompl.kavrakilab.org/core/installation.html) for detailed installation instructions.
 
 OMPL has the following required dependencies:
 
@@ -29,7 +28,7 @@ https://robotic-esp.com/papers/gammell_empp22.pdf) (released version)
 https://openrave.org/) (released version)
 * [Ompl Benchmark Plotter](https://github.com/aorthey/ompl_benchmark_plotter) (recommended to check the git repos for benchmark) (released version)
 
-To change the iteration time lagging in PDT, replace the following condition in **RandomGeometricGraph.cpp**:
+To change the iteration time lagging in PDT, replace the following condition in **RandomGeometricGraph.cpp** file of the planner:
 
    *while (newSamples_.size() < numNewStates && !terminationCondition);*
     
@@ -53,12 +52,12 @@ If you found this research useful for your own work, please use the following ci
 
 ## Installation of OPENRAVE
 
-install python 2.7
+Install Python 2.7
     
     sudo apt-get update
     sudo apt-get install python2
 
-check default python version
+Check the default Python version
 
     python --version && python3 --version
 Python 2.7 as the default version by creating a symbolic link
