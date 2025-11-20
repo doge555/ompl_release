@@ -66,12 +66,12 @@ Python 2.7 as the default version by creating a symbolic link
     sudo update-alternatives --install /usr/bin/python python /usr/bin/python3 2
 
 
-manually select python version 2.7, you can change it back when OPENRAVE installed
+Manually select Python version 2.7; you can change it back when OPENRAVE is installed
 
     sudo update-alternatives --config python
 
 
-install of OPENRAVE repos
+installation of OPENRAVE repos
 
     cd ~
     git clone https://github.com/crigroup/openrave-installation
@@ -93,7 +93,7 @@ following commands
 You can use macro commands to toggle the code you want to compile
 
     cmake -DCMAKE_BUILD_TYPE=Debug -DOMPL_BUILD_TESTS=OFF -DOMPL_BUILD_DEMOS=OFF ..
-    make -j 4 # depends on core you are using
+    make -j 4 # depends on the core you are using
 
 install build into /usr/local folder
 
@@ -107,13 +107,13 @@ switch to pdt folder
     #### this is for install
     cmake -DPDT_OMPL_DIR=/usr/local -DPDT_OPEN_RAVE=ON ..
     
-    ### this is for moveit version
+    ### this is for MoveIt version
     cmake -DPDT_OMPL_DIR=~/ws_moveit/devel -DPDT_OPEN_RAVE=ON ..
 
-    ### for moveGroup test. indicate which ompl you are using
+    ### for moveGroup test. Indicate which OMPL you are using
     lsof -p $(pidof move_group) | grep ompl
 
-    make -j 4 # depends on core you are using
+    make -j 4 # depends on the core you are using
 
 GDB debug for moveit issues:
 
@@ -129,7 +129,7 @@ show OPENRAVE visualization result according to the open_rave_demo config
 
     ./bin/open_rave_gui -c ../parameters/demo/open_rave_demo.json
     
-in case you are old version of PDT: change in open_rave_demo.json
+in case you are an old version of PDT: change in open_rave_demo.json
 
     "viewer": "qtcoin",
     to
