@@ -75,7 +75,7 @@ installation of OPENRAVE repos
 
     cd ~
     git clone https://github.com/crigroup/openrave-installation
-    cd openrave-insstallation
+    cd openrave-installation
 install and build OPERAVE in order
 
     sudo ./install-dependencies.sh
