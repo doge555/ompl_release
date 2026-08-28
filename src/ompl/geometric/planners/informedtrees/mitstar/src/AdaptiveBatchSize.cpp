@@ -36,6 +36,34 @@
 
 #include "ompl/geometric/planners/informedtrees/mitstar/AdaptiveBatchSize.h"
 
+#include <algorithm>
+#include <cmath>
+#include <iostream>
+#include <limits>
+
+namespace
+{
+    double informedMeasure(double solutionCost, double minimumPossibleCost, std::size_t dimension)
+    {
+        if (dimension == 0u || !std::isfinite(solutionCost) || !std::isfinite(minimumPossibleCost) ||
+            solutionCost < minimumPossibleCost)
+        {
+            return std::numeric_limits<double>::quiet_NaN();
+        }
+
+        const double transverseRadius = solutionCost / 2.0;
+        const double conjugateRadiusSquared =
+            std::max(0.0, solutionCost * solutionCost - minimumPossibleCost * minimumPossibleCost) / 4.0;
+        const double conjugateRadius = std::sqrt(conjugateRadiusSquared);
+        const double halfDimension = static_cast<double>(dimension) / 2.0;
+        const double unitBallMeasure =
+            std::pow(std::acos(-1.0), halfDimension) / std::tgamma(halfDimension + 1.0);
+
+        return unitBallMeasure * transverseRadius *
+               std::pow(conjugateRadius, static_cast<double>(dimension - 1u));
+    }
+}
+
 namespace ompl
 {
     namespace geometric
@@ -165,32 +193,38 @@ namespace ompl
                     return _batchSize_;
                 }
 
-                double a = _solutionCost_.value() / 2;
-                double c = minPossibleCost_ / 2;
-                double b = std::sqrt(a * a - c * c);
-                double S = M_PI * a * b;
-                static bool pragma = false;
-                if (!pragma)
+                const double currentMeasure =
+                    informedMeasure(_solutionCost_.value(), minPossibleCost_, dim_);
+                if (!std::isfinite(currentMeasure))
                 {
-                    _S_max_initial_ = S;
-                    pragma = true;
+                    return _batchSize_;
                 }
 
-                double ratio = S / _S_max_initial_;
+                if (!std::isfinite(_S_max_initial_) || _S_max_initial_ <= 0.0)
+                {
+                    _S_max_initial_ = currentMeasure;
+                }
+
+                const double rawRatio = _S_max_initial_ > 0.0 ? currentMeasure / _S_max_initial_ : 0.0;
+                const double ratio = std::max(0.0, std::min(1.0, rawRatio));
 
                 // Logarithmic decay
-                double lambda =
-                    (_minSamples_ + _maxSamples_) / dim_;  // Adjust this value to make the decay faster or slower
+                const double lambda = static_cast<double>(_minSamples_ + _maxSamples_) /
+                                      static_cast<double>(dim_);  // Adjust this value to make the decay faster or slower
                 // Sigmoid function to smooth ratio
-                double smoothedValue = 1 / (1 + exp(-10 * (ratio - 0.5)));
-                double decay_factor = log(1 + lambda * smoothedValue) / log(1 + lambda);
+                const double smoothedValue = 1.0 / (1.0 + std::exp(-10.0 * (ratio - 0.5)));
+                const double decay_factor =
+                    std::log(1.0 + lambda * smoothedValue) / std::log(1.0 + lambda);
                 _batchSize_ = _minSamples_ + (_maxSamples_ - _minSamples_) * decay_factor;
 
                 // Clamp batchSize_ to be within [minSamples_, maxSamples_]
                 _batchSize_ = std::max(_minSamples_, std::min(_maxSamples_, _batchSize_));
                 // areaList_[ratio]++;
 
-                std::cout << "---------------batchsize of current batch is : " << _batchSize_ << std::endl;
+                std::cout << "MIT* adaptive batch: cost=" << _solutionCost_.value()
+                          << ", min_cost=" << minPossibleCost_ << ", measure=" << currentMeasure
+                          << ", initial_measure=" << _S_max_initial_ << ", ratio=" << ratio
+                          << ", batch_size=" << _batchSize_ << std::endl;
                 return _batchSize_;
             }
 

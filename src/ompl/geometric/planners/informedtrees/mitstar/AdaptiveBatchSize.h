@@ -94,8 +94,8 @@ namespace ompl
                 /** \brief Initialize the batch size. */
                 unsigned int _batchSize_;
 
-                /** \brief Initialize the maximal area of n-dimensional ellipsoid. */
-                double _S_max_initial_;
+                /** \brief Initial informed-set measure owned by the current MIT* query. */
+                double &_S_max_initial_;
 
                 /** \brief Initialize the minimal area of n-dimensional ellipsoid. */
                 double _S_min_initial_;

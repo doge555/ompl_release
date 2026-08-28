@@ -134,9 +134,11 @@ namespace ompl
 
                 // Initialize costs to infinity.
                 solutionCost_ = objective_->infiniteCost();
+                lastsolutionCost_ = objective_->infiniteCost();
                 reverseCost_ = objective_->infiniteCost();
                 approximateSolutionCost_ = objective_->infiniteCost();
                 approximateSolutionCostToGoal_ = objective_->infiniteCost();
+                S_max_initial_ = 0.0;
 
                 // Instantiate the queues.
                 forwardQueue_ = std::make_unique<mitstar::ForwardQueue>(objective_, space_);
@@ -239,6 +241,7 @@ namespace ompl
             // Reset the solution costs. Cannot use infiniteCost() before resetting the objective because the objective
             // of a new problem definition objective might define that differently than the old.
             solutionCost_ = ompl::base::Cost(std::numeric_limits<double>::signaling_NaN());
+            lastsolutionCost_ = ompl::base::Cost(std::numeric_limits<double>::signaling_NaN());
             reverseCost_ = ompl::base::Cost(std::numeric_limits<double>::signaling_NaN());
             approximateSolutionCost_ = ompl::base::Cost(std::numeric_limits<double>::signaling_NaN());
             approximateSolutionCostToGoal_ = ompl::base::Cost(std::numeric_limits<double>::signaling_NaN());
@@ -267,9 +270,11 @@ namespace ompl
                 goalVertices_.clear();
                 graph_.clearQuery();
                 solutionCost_ = objective_->infiniteCost();
+                lastsolutionCost_ = objective_->infiniteCost();
                 reverseCost_ = objective_->infiniteCost();
                 approximateSolutionCost_ = objective_->infiniteCost();
                 approximateSolutionCostToGoal_ = objective_->infiniteCost();
+                S_max_initial_ = 0.0;
 
                 suboptimalityFactor_ = std::numeric_limits<double>::infinity();
                 restartReverseSearch();

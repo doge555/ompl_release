@@ -361,8 +361,8 @@ namespace ompl
             /** \brief Whether to use a adaptive batch size RGG. If false, MIT* uses an static batchsize. */
             bool useAdaptiveBatchSize_{false};
 
-            /** \brief Max area of the sampled ellipse */
-            double S_max_initial_{1.0};
+            /** \brief Initial informed-set measure for adaptive batch sizing in this query. */
+            double S_max_initial_{0.0};
 
             /** \brief Min area of the sampled ellipse */
             double S_min_initial_{0.0};
