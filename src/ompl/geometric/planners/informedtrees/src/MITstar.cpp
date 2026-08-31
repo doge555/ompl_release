@@ -139,6 +139,7 @@ namespace ompl
                 approximateSolutionCost_ = objective_->infiniteCost();
                 approximateSolutionCostToGoal_ = objective_->infiniteCost();
                 S_max_initial_ = 0.0;
+                batchSize_ = maxBatchSize_;
 
                 // Instantiate the queues.
                 forwardQueue_ = std::make_unique<mitstar::ForwardQueue>(objective_, space_);
@@ -302,6 +303,7 @@ namespace ompl
         void MITstar::setBatchSize(unsigned int numSamples)
         {
             batchSize_ = numSamples;
+            maxBatchSize_ = numSamples;
         }
 
         unsigned int MITstar::getBatchSize() const
@@ -554,9 +556,9 @@ namespace ompl
                     const double minPossibleCost = graph_.minPossibleCost().value();
                     AdaptiveBatchSize adaptiveBatchSize_ =
                         AdaptiveBatchSize(decay_method_, solutionCost_, minPossibleCost, batchSize_, S_max_initial_,
-                                          S_min_initial_, maxSamples_, minSamples_, spaceInfo_->getStateDimension());
+                                          S_min_initial_, maxBatchSize_, minSamples_, spaceInfo_->getStateDimension());
                     unsigned int numSamples = adaptiveBatchSize_.adjustBatchSize(decay_method_);
-                    setBatchSize(numSamples);
+                    batchSize_ = numSamples;
                 // if (solutionCost_.value() != lastsolutionCost_.value())
                 // {
                 //     lastsolutionCost_.setValue(solutionCost_.value());

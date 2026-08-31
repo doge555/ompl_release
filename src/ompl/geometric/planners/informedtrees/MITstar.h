@@ -358,6 +358,9 @@ namespace ompl
             /** \brief The number of states added when the approximation is updated. */
             unsigned int batchSize_{100u};
 
+            /** \brief User-configured batch size and upper bound for adaptive batch sizing. */
+            unsigned int maxBatchSize_{100u};
+
             /** \brief Whether to use a adaptive batch size RGG. If false, MIT* uses an static batchsize. */
             bool useAdaptiveBatchSize_{false};
 
@@ -366,9 +369,6 @@ namespace ompl
 
             /** \brief Min area of the sampled ellipse */
             double S_min_initial_{0.0};
-
-            /** \brief Max sample numbers */
-            const unsigned int maxSamples_{100u};
 
             /** \brief Min sample numbers */
             const unsigned int minSamples_{1u};
