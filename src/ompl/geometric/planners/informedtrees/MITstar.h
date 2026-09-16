@@ -126,6 +126,12 @@ namespace ompl
             /** \brief Returns whether to use a k-nearest RGG connection model. If false, MIT* uses an r-disc model. */
             bool getUseKNearest() const;
 
+            /** \brief Use the optimization objective's best-estimate motion cost as the k-nearest metric. */
+            void setUseObjectiveCostForNearestNeighbors(bool useObjectiveCost);
+
+            /** \brief Returns whether nearest-neighbor lookup uses the optimization objective's motion cost. */
+            bool getUseObjectiveCostForNearestNeighbors() const;
+
             /** \brief Set whether to use a adaptive batch size RGG connection model. If false, MIT* uses static model.
              */
             void setUseAdaptiveBatchSize(bool useAdaptiveBatchSize);
@@ -366,9 +372,6 @@ namespace ompl
 
             /** \brief Initial informed-set measure for adaptive batch sizing in this query. */
             double S_max_initial_{0.0};
-
-            /** \brief Min area of the sampled ellipse */
-            double S_min_initial_{0.0};
 
             /** \brief Min sample numbers */
             const unsigned int minSamples_{1u};

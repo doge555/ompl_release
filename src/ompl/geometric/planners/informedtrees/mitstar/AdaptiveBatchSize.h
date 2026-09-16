@@ -59,8 +59,8 @@ namespace ompl
             {
             public:
                 AdaptiveBatchSize(const DecayMethod &decay_method, ompl::base::Cost &solutionCost,
-                                  const double &minPossibleCost, unsigned int &batchSize, double &S_max_initial,
-                                  double &S_min_initial, const unsigned int &maxSamples,
+                                  double informedMeasure, unsigned int &batchSize, double &S_max_initial,
+                                  const unsigned int &maxSamples,
                                   const unsigned int &minSamples, std::size_t dim);
                 ~AdaptiveBatchSize() = default;
 
@@ -82,23 +82,23 @@ namespace ompl
                 /** \brief Type of Decay method */
                 unsigned int adjustBatchSizeBrachistochrone();
 
+                double measureRatio();
+
                 /** \brief Type of Decay method */
                 DecayMethod decay_method_;
 
                 /** \brief Initialize the solution cost. */
                 ompl::base::Cost _solutionCost_{std::numeric_limits<double>::infinity()};
 
-                /** \brief Initialize the minial possible cost. */
-                double minPossibleCost_;
+
+                /** \brief Current informed-set measure supplied by the active sampler. */
+                double informedMeasure_;
 
                 /** \brief Initialize the batch size. */
                 unsigned int _batchSize_;
 
                 /** \brief Initial informed-set measure owned by the current MIT* query. */
                 double &_S_max_initial_;
-
-                /** \brief Initialize the minimal area of n-dimensional ellipsoid. */
-                double _S_min_initial_;
 
                 /** \brief Initialize the maximal number per sample. */
                 unsigned int _maxSamples_;

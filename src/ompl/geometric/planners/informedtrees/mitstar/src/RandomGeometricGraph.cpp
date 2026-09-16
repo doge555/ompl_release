@@ -67,6 +67,10 @@ namespace ompl
             {
                 samples_.setDistanceFunction(
                     [this](const std::shared_ptr<State> &state1, const std::shared_ptr<State> &state2) {
+                        if (useObjectiveCostForNearestNeighbors_ && objective_)
+                        {
+                            return objective_->motionCostBestEstimate(state1->state_, state2->state_).value();
+                        }
                         return spaceInfo_->distance(state1->state_, state2->state_);
                     });
             }
@@ -361,6 +365,16 @@ namespace ompl
             ompl::base::Cost RandomGeometricGraph::minPossibleCost() const
             {
                 return minPossibleCost_;
+            }
+
+            bool RandomGeometricGraph::hasInformedMeasure() const
+            {
+                return sampler_ && sampler_->hasInformedMeasure();
+            }
+
+            double RandomGeometricGraph::getInformedMeasure(const ompl::base::Cost &cost) const
+            {
+                return sampler_->getInformedMeasure(cost);
             }
 
             void RandomGeometricGraph::setRadiusFactor(double factor)
@@ -675,6 +689,16 @@ namespace ompl
             bool RandomGeometricGraph::getUseKNearest() const
             {
                 return useKNearest_;
+            }
+
+            void RandomGeometricGraph::setUseObjectiveCostForNearestNeighbors(bool useObjectiveCost)
+            {
+                useObjectiveCostForNearestNeighbors_ = useObjectiveCost;
+            }
+
+            bool RandomGeometricGraph::getUseObjectiveCostForNearestNeighbors() const
+            {
+                return useObjectiveCostForNearestNeighbors_;
             }
 
             void RandomGeometricGraph::setMaxNumberOfGoals(unsigned int maxNumberOfGoals)

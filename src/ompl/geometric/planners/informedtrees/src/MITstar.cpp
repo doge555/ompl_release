@@ -73,6 +73,9 @@ namespace ompl
 
             // Register the setting callbacks.
             declareParam<bool>("use_k_nearest", this, &MITstar::setUseKNearest, &MITstar::getUseKNearest, "0,1");
+            declareParam<bool>("use_objective_cost_for_nearest_neighbors", this,
+                               &MITstar::setUseObjectiveCostForNearestNeighbors,
+                               &MITstar::getUseObjectiveCostForNearestNeighbors, "0,1");
             declareParam<bool>("use_adaptive_batchsize", this, &MITstar::setUseAdaptiveBatchSize,
                                &MITstar::getUseAdaptiveBatchSize, "0,1");
             declareParam<double>("rewire_factor", this, &MITstar::setRadiusFactor, &MITstar::getRadiusFactor,
@@ -131,6 +134,14 @@ namespace ompl
 
                 // Pull through the optimization objective for direct access.
                 objective_ = problem_->getOptimizationObjective();
+
+                if (graph_.getUseObjectiveCostForNearestNeighbors() && !graph_.getUseKNearest())
+                {
+                    OMPL_ERROR("%s: Objective-cost nearest-neighbor lookup requires the k-nearest RGG model.",
+                               name_.c_str());
+                    setup_ = false;
+                    return;
+                }
 
                 // Initialize costs to infinity.
                 solutionCost_ = objective_->infiniteCost();
@@ -420,6 +431,16 @@ namespace ompl
             return graph_.getUseKNearest();
         }
 
+        void MITstar::setUseObjectiveCostForNearestNeighbors(bool useObjectiveCost)
+        {
+            graph_.setUseObjectiveCostForNearestNeighbors(useObjectiveCost);
+        }
+
+        bool MITstar::getUseObjectiveCostForNearestNeighbors() const
+        {
+            return graph_.getUseObjectiveCostForNearestNeighbors();
+        }
+
         void MITstar::setUseAdaptiveBatchSize(bool useAdaptiveBatchSize)
         {
             useAdaptiveBatchSize_ = useAdaptiveBatchSize;
@@ -548,15 +569,15 @@ namespace ompl
             // Adjust the batch size according to the decay method
             if (useAdaptiveBatchSize_)
             {
-                if (solutionCost_.value() != lastsolutionCost_.value())
+                if (solutionCost_.value() != lastsolutionCost_.value() && graph_.hasInformedMeasure())
                 // if (true)
                 {
                     lastsolutionCost_.setValue(solutionCost_.value());
                     DecayMethod decay_method_ = DecayMethod::LOG;
-                    const double minPossibleCost = graph_.minPossibleCost().value();
+                    const double informedMeasure = graph_.getInformedMeasure(solutionCost_);
                     AdaptiveBatchSize adaptiveBatchSize_ =
-                        AdaptiveBatchSize(decay_method_, solutionCost_, minPossibleCost, batchSize_, S_max_initial_,
-                                          S_min_initial_, maxBatchSize_, minSamples_, spaceInfo_->getStateDimension());
+                        AdaptiveBatchSize(decay_method_, solutionCost_, informedMeasure, batchSize_, S_max_initial_,
+                                          maxBatchSize_, minSamples_, spaceInfo_->getStateDimension());
                     unsigned int numSamples = adaptiveBatchSize_.adjustBatchSize(decay_method_);
                     batchSize_ = numSamples;
                 // if (solutionCost_.value() != lastsolutionCost_.value())
