@@ -539,23 +539,24 @@ namespace ompl
                     bool foundValidSample = false;
                     do  // Sample randomly until a valid state is found.
                     {
+                        bool sampled = false;
                         if (isMultiqueryEnabled_)
                         {
                             // If we are doing multiquery planning, we sample uniformly, and reject samples that can
                             // not improve the solution. This means that we need to sample the whole space, and add
                             // the samples to the buffer
-                            sampler_->sampleUniform(state->raw(), objective_->infiniteCost());
+                            sampled = sampler_->sampleUniform(state->raw(), objective_->infiniteCost());
                         }
                         else
                         {
                             // In case we are not doing multiquery planning, we can still directly sample the informed
                             // set.
-                            sampler_->sampleUniform(state->raw(), currentcostsolution());
+                            sampled = sampler_->sampleUniform(state->raw(), currentcostsolution());
                         }
 
                         ++numSampledStates_;
                         // Check if the sample is valid.
-                        foundValidSample = spaceInfo_->isValid(state->raw());
+                        foundValidSample = sampled && spaceInfo_->isValid(state->raw());
                     } while (!foundValidSample && !terminationCondition);
 
                     // The sample is invalid, but we have to return to respect the termination condition.

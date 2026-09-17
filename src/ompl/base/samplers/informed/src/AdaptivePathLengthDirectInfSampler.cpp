@@ -45,6 +45,7 @@
 
 // For std::make_shared
 #include <memory>
+#include <utility>
 // For std::vector
 #include <vector>
 
@@ -251,6 +252,22 @@ namespace ompl
 
         AdaptivePathLengthDirectInfSampler::~AdaptivePathLengthDirectInfSampler() = default;
 
+        void AdaptivePathLengthDirectInfSampler::setCandidatePreprocessor(
+            CandidatePreprocessor candidatePreprocessor)
+        {
+            candidatePreprocessor_ = std::move(candidatePreprocessor);
+        }
+
+        bool AdaptivePathLengthDirectInfSampler::preprocessAndValidate(State *statePtr)
+        {
+            if (candidatePreprocessor_ && !candidatePreprocessor_(statePtr))
+            {
+                return false;
+            }
+            return AdaptiveSampler::space_->satisfiesBounds(statePtr) &&
+                   AdaptiveSampler::getProblemDefn()->getSpaceInformation()->isValid(statePtr);
+        }
+
         bool AdaptivePathLengthDirectInfSampler::sampleUniform(State *statePtr, const Cost &maxCost)
         {
             // Variable
@@ -369,7 +386,7 @@ namespace ompl
                     baseSampler_->sampleUniform(statePtr);
                     bool v1 = false, v2 = false;
                     //randomly sample a state
-                    v1 = AdaptiveSampler::getProblemDefn()->getSpaceInformation()->isValid(statePtr);
+                    v1 = preprocessAndValidate(statePtr);
                 
                 
                     if (v1)
@@ -382,7 +399,7 @@ namespace ompl
                         //if it is not valid, sample a temporary state that is standard deviation distance away from the current state
                         //if it is valid, output it
                         baseSampler_->sampleGaussian(temp, statePtr, stddev_);
-                        v2 = AdaptiveSampler::getProblemDefn()->getSpaceInformation()->isValid(temp);
+                        v2 = preprocessAndValidate(temp);
                         if (v2)
                         {
                             AdaptiveSampler::getProblemDefn()->getSpaceInformation()->copyState(statePtr, temp);
@@ -394,7 +411,7 @@ namespace ompl
                             for (float i = 0.1; i <= 0.9; i = i+0.1)
                             {
                                 AdaptiveSampler::getProblemDefn()->getSpaceInformation()->getStateSpace()->interpolate(temp, statePtr, i, midpoint);
-                                if (AdaptiveSampler::getProblemDefn()->getSpaceInformation()->isValid(midpoint))
+                                if (preprocessAndValidate(midpoint))
                                 {
                                    AdaptiveSampler::getProblemDefn()->getSpaceInformation()->copyState(statePtr, midpoint);
                                    foundSample = true;
@@ -454,7 +471,7 @@ namespace ompl
 
                 bool v1 = false, v2 = false;
                 //randomly sample a state
-                v1 = AdaptiveSampler::getProblemDefn()->getSpaceInformation()->isValid(statePtr);
+                v1 = preprocessAndValidate(statePtr);
                 
                 
                 if (v1)
@@ -467,7 +484,7 @@ namespace ompl
                     //if it is not valid, sample a temporary state that is standard deviation distance away from the current state
                     //if it is valid, output it
                     baseSampler_->sampleGaussian(temp, statePtr, stddev_);
-                    v2 = AdaptiveSampler::getProblemDefn()->getSpaceInformation()->isValid(temp);
+                    v2 = preprocessAndValidate(temp);
                     if (v2)
                     {
                         AdaptiveSampler::getProblemDefn()->getSpaceInformation()->copyState(statePtr, temp);
@@ -479,7 +496,7 @@ namespace ompl
                         for (float i = 0.1; i <= 0.9; i = i+0.1)
                         {
                             AdaptiveSampler::getProblemDefn()->getSpaceInformation()->getStateSpace()->interpolate(temp, statePtr, i, midpoint);
-                            if (AdaptiveSampler::getProblemDefn()->getSpaceInformation()->isValid(midpoint))
+                            if (preprocessAndValidate(midpoint))
                             {
                                 AdaptiveSampler::getProblemDefn()->getSpaceInformation()->copyState(statePtr, midpoint);
                                 validSample = true;

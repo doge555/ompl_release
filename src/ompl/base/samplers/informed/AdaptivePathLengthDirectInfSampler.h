@@ -42,6 +42,7 @@
 #include "ompl/base/samplers/AdaptiveSampler.h"
 
 // For std::list
+#include <functional>
 #include <list>
 
 namespace ompl
@@ -81,6 +82,8 @@ namespace ompl
         class AdaptivePathLengthDirectInfSampler : public AdaptiveSampler
         {
         public:
+            using CandidatePreprocessor = std::function<bool(State *)>;
+
             /** \brief Construct a sampler that only generates states with a heuristic solution estimate that is less
              * than the cost of the current solution using a direct ellipsoidal method. */
             AdaptivePathLengthDirectInfSampler(const ProblemDefinitionPtr &probDefn, unsigned int maxNumberCalls);
@@ -108,6 +111,9 @@ namespace ompl
             /** \brief A helper function to calculate the heuristic estimate of the solution cost for the informed
              * subset of a given state. */
             Cost heuristicSolnCost(const State *statePtr) const override;
+
+            /** \brief Optionally transform a candidate before the sampler's internal validity checks. */
+            void setCandidatePreprocessor(CandidatePreprocessor candidatePreprocessor);
 
             /** Set the seeds of the underlying RNGs */
             void setLocalSeed(std::uint_fast32_t localSeed) override
@@ -145,6 +151,9 @@ namespace ompl
             /** \brief Sample from the given PHS and return true if the sample is within the boundaries of the problem
              * (i.e., it \e may be kept). */
             bool samplePhsRejectBounds(State *statePtr, unsigned int *iters);
+
+            /** \brief Apply the optional candidate transformation and then run the planning validity checker. */
+            bool preprocessAndValidate(State *statePtr);
 
             // Low level
             /** \brief Extract the informed subspace from a state pointer */
@@ -204,6 +213,9 @@ namespace ompl
 
             /** \brief A regular sampler to use on the uninformed subspace. */
             StateSamplerPtr uninformedSubSampler_;
+
+            /** \brief Optional application-level candidate transformation used before internal validity feedback. */
+            CandidatePreprocessor candidatePreprocessor_;
 
             /** \brief An instance of a random number generator */
             RNG rng_;
