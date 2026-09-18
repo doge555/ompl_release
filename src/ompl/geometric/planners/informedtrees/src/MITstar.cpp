@@ -1178,6 +1178,14 @@ namespace ompl
 
         void MITstar::updateExactSolution(const std::shared_ptr<mitstar::State> &goal)
         {
+            // A goal is only an exact solution if every parent edge was certified
+            // by the forward full-resolution validator. This audit reads edge
+            // certificates only; it does not repeat state-validity checks.
+            if (!hasFullyValidatedPath(goal))
+            {
+                return;
+            }
+
             // We update the current goal if
             //   1. The new goal has a better cost to come than the old goal
             //   2. Or the exact solution we found is no longer registered with the problem definition
@@ -1218,6 +1226,32 @@ namespace ompl
                 // Let the user know about the new solution.
                 informAboutNewSolution();
             }
+        }
+
+        bool MITstar::hasFullyValidatedPath(const std::shared_ptr<mitstar::State> &goal) const
+        {
+            auto current = goal;
+            while (!graph_.isStart(current))
+            {
+                if (!current->hasForwardVertex())
+                {
+                    return false;
+                }
+
+                const auto parentVertex = current->asForwardVertex()->getParent().lock();
+                if (!parentVertex)
+                {
+                    return false;
+                }
+
+                const auto parent = parentVertex->getState();
+                if (!current->isWhitelisted(parent))
+                {
+                    return false;
+                }
+                current = parent;
+            }
+            return true;
         }
 
         void MITstar::updateApproximateSolution(const std::shared_ptr<mitstar::State> &state)
@@ -1465,18 +1499,27 @@ namespace ompl
         {
             // The number of checks required to determine whether the edge is valid is the valid segment count minus one
             // because we know that the source and target states are valid.
-            const std::size_t numChecks = space_->validSegmentCount(edge.source->raw(), edge.target->raw()) - 1u;
+            const std::size_t fullSegmentCount =
+                space_->validSegmentCount(edge.source->raw(), edge.target->raw());
+            const std::size_t numChecks = fullSegmentCount > 0u ? fullSegmentCount - 1u : 0u;
 
-            return isValidAtResolution(edge, numChecks);
+            return isValidAtResolution(edge, numChecks, true);
         }
 
         bool MITstar::couldBeValid(const Edge &edge) const
         {
-            const std::size_t numSparseChecks = (space_->distance(edge.source->raw(), edge.target->raw()) / CurrentSparseResolution) - 1u;
-            return isValidAtResolution(edge, numSparseChecks);
+            const double edgeDistance = space_->distance(edge.source->raw(), edge.target->raw());
+            const std::size_t sparseSegmentCount =
+                CurrentSparseResolution > 0.0
+                    ? static_cast<std::size_t>(std::ceil(edgeDistance / CurrentSparseResolution))
+                    : 1u;
+            const std::size_t numSparseChecks =
+                sparseSegmentCount > 0u ? sparseSegmentCount - 1u : 0u;
+            return isValidAtResolution(edge, numSparseChecks, false);
         }
 
-        bool MITstar::isValidAtResolution(const Edge &edge, std::size_t numChecks) const
+        bool MITstar::isValidAtResolution(const Edge &edge, std::size_t numChecks,
+                                          const bool certifyFullValidation) const
         {
             // Check if the edge is whitelisted.
             if (edge.source->isWhitelisted(edge.target))
@@ -1493,9 +1536,13 @@ namespace ompl
             // Get the segment count for the full resolution.
             const std::size_t fullSegmentCount = space_->validSegmentCount(edge.source->raw(), edge.target->raw());
 
-            // The segment count is the number of checks on this level plus 1, capped by the full resolution segment
-            // count.
-            const auto segmentCount = std::min(numChecks + 1u, fullSegmentCount);
+            // Every validation level uses the same canonical full-resolution
+            // grid. Sparse checks consume a prefix of its midpoint-first order,
+            // so the cached count always refers to the exact same positions.
+            const std::size_t fullCheckCount =
+                fullSegmentCount > 0u ? fullSegmentCount - 1u : 0u;
+            const std::size_t requestedChecks =
+                std::min(numChecks, fullCheckCount);
 
             /***
                Let's say we want to perform seven collision checks on an edge:
@@ -1530,18 +1577,23 @@ namespace ompl
                     current (7, 7) -> test midpoint = 7 -> add nothing to the queue
             ***/
 
-            // Store the current check number.
+            // Store the current check number in the canonical schedule.
             std::size_t currentCheck = 1u;
 
             // Get the number of checks already performed on this edge.
-            const std::size_t performedChecks = edge.target->getIncomingCollisionCheckResolution(edge.source);
+            const std::size_t performedChecks = std::min(
+                edge.target->getIncomingCollisionCheckResolution(edge.source),
+                fullCheckCount);
 
-            // Initialize the queue of positions to be tested.
+            // Initialize the queue with all canonical interior indices.
             std::queue<std::pair<std::size_t, std::size_t>> indices;
-            indices.emplace(1u, numChecks);
+            if (fullCheckCount > 0u)
+            {
+                indices.emplace(1u, fullCheckCount);
+            }
 
-            // Test states while there are states to be tested.
-            while (!indices.empty())
+            // Test the requested prefix of the canonical midpoint-first order.
+            while (!indices.empty() && currentCheck <= requestedChecks)
             {
                 // Get the current segment.
                 const auto current = indices.front();
@@ -1553,7 +1605,9 @@ namespace ompl
                 if (currentCheck > performedChecks)
                 {
                     space_->interpolate(edge.source->raw(), edge.target->raw(),
-                                        static_cast<double>(mid) / static_cast<double>(segmentCount), detectionState_);
+                                        static_cast<double>(mid) /
+                                            static_cast<double>(fullSegmentCount),
+                                        detectionState_);
 
                     if (!spaceInfo_->isValid(detectionState_))
                     {
@@ -1586,11 +1640,14 @@ namespace ompl
 
             // Remember at what resolution this edge was already checked. We're assuming that the number of collision
             // checks is symmetric for each edge.
-            edge.source->setIncomingCollisionCheckResolution(edge.target, currentCheck - 1u);
-            edge.target->setIncomingCollisionCheckResolution(edge.source, currentCheck - 1u);
+            const std::size_t completedChecks =
+                std::max(performedChecks, currentCheck - 1u);
+            edge.source->setIncomingCollisionCheckResolution(edge.target, completedChecks);
+            edge.target->setIncomingCollisionCheckResolution(edge.source, completedChecks);
 
-            // Whitelist this edge if it was checked at full resolution.
-            if (segmentCount == fullSegmentCount)
+            // Sparse reverse checks may accumulate reusable canonical evidence,
+            // but only the forward full validator may issue the certificate.
+            if (certifyFullValidation && completedChecks == fullCheckCount)
             {
                 ++numCollisionCheckedEdges_;
                 edge.source->whitelist(edge.target);

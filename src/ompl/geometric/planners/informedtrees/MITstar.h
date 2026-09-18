@@ -262,6 +262,9 @@ namespace ompl
             /** \brief Updates the solution with a given goal state. */
             void updateExactSolution(const std::shared_ptr<mitstar::State> &goalState);
 
+            /** \brief Returns whether every edge on the forward path to the goal has a full-validation certificate. */
+            bool hasFullyValidatedPath(const std::shared_ptr<mitstar::State> &goalState) const;
+
             /** \brief Checks whether the input vertex is the new best approximate solution and updates the solution in
              * the problem definition if so. **/
             void updateApproximateSolution(const std::shared_ptr<mitstar::State> &state);
@@ -335,9 +338,10 @@ namespace ompl
             /** \brief Returns whether the edge could be valid. Performs sparse collision detection on the edge. */
             bool couldBeValid(const mitstar::Edge &edge) const;
 
-            /** \brief Returns whether the edge is valid at the given resolution, this function does the actual work of
-             * checking states along the edge. */
-            bool isValidAtResolution(const mitstar::Edge &edge, std::size_t numChecks) const;
+            /** \brief Checks a prefix of the edge's canonical full-resolution schedule. Only a forward full check may
+             * whitelist the edge. */
+            bool isValidAtResolution(const mitstar::Edge &edge, std::size_t numChecks,
+                                     bool certifyFullValidation) const;
 
             /** \brief Returns whether the cost is better than the other. */
             bool isBetter(const ompl::base::Cost &lhs, const ompl::base::Cost &rhs) const;
