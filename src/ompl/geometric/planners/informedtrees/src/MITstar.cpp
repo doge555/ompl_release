@@ -73,9 +73,6 @@ namespace ompl
 
             // Register the setting callbacks.
             declareParam<bool>("use_k_nearest", this, &MITstar::setUseKNearest, &MITstar::getUseKNearest, "0,1");
-            declareParam<bool>("use_objective_cost_for_nearest_neighbors", this,
-                               &MITstar::setUseObjectiveCostForNearestNeighbors,
-                               &MITstar::getUseObjectiveCostForNearestNeighbors, "0,1");
             declareParam<bool>("use_adaptive_batchsize", this, &MITstar::setUseAdaptiveBatchSize,
                                &MITstar::getUseAdaptiveBatchSize, "0,1");
             declareParam<double>("rewire_factor", this, &MITstar::setRadiusFactor, &MITstar::getRadiusFactor,
@@ -134,14 +131,6 @@ namespace ompl
 
                 // Pull through the optimization objective for direct access.
                 objective_ = problem_->getOptimizationObjective();
-
-                if (graph_.getUseObjectiveCostForNearestNeighbors() && !graph_.getUseKNearest())
-                {
-                    OMPL_ERROR("%s: Objective-cost nearest-neighbor lookup requires the k-nearest RGG model.",
-                               name_.c_str());
-                    setup_ = false;
-                    return;
-                }
 
                 // Initialize costs to infinity.
                 solutionCost_ = objective_->infiniteCost();
@@ -429,16 +418,6 @@ namespace ompl
         bool MITstar::getUseKNearest() const
         {
             return graph_.getUseKNearest();
-        }
-
-        void MITstar::setUseObjectiveCostForNearestNeighbors(bool useObjectiveCost)
-        {
-            graph_.setUseObjectiveCostForNearestNeighbors(useObjectiveCost);
-        }
-
-        bool MITstar::getUseObjectiveCostForNearestNeighbors() const
-        {
-            return graph_.getUseObjectiveCostForNearestNeighbors();
         }
 
         void MITstar::setUseAdaptiveBatchSize(bool useAdaptiveBatchSize)

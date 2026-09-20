@@ -126,12 +126,6 @@ namespace ompl
                  * model. */
                 bool getUseKNearest() const;
 
-                /** \brief Use the objective's best-estimate motion cost for k-nearest lookup. */
-                void setUseObjectiveCostForNearestNeighbors(bool useObjectiveCost);
-
-                /** \brief Returns whether nearest-neighbor lookup uses the objective's motion cost. */
-                bool getUseObjectiveCostForNearestNeighbors() const;
-
                 /** \brief Sets the maximum number of goals MIT* will sample from sampleable goal regions. */
                 void setMaxNumberOfGoals(unsigned int maxNumberOfGoals);
 
@@ -299,9 +293,6 @@ namespace ompl
 
                 /** \brief Whether to use a k-nearest RGG. If false, MIT* uses an r-disc RGG. */
                 bool useKNearest_{true};
-
-                /** \brief Whether nearest-neighbor lookup uses the optimization objective's motion cost. */
-                bool useObjectiveCostForNearestNeighbors_{false};
 
                 /** \brief The maximum number of goals MIT* will sample explicitly from a sampleable goal region. */
                 unsigned int maxNumGoals_{1u};
