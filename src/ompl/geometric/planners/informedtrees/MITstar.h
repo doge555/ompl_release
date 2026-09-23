@@ -87,6 +87,18 @@ namespace ompl
             /** \brief Returns the number of samples per batch. */
             unsigned int getBatchSize() const;
 
+            /** \brief Returns time spent creating, validating, and inserting sample batches in the current solve. */
+            double getBatchSamplingTime() const;
+
+            /** \brief Returns time spent advancing the forward and reverse graph searches in the current solve. */
+            double getGraphSearchTime() const;
+
+            /** \brief Returns time spent advancing the forward search in the current solve. */
+            double getForwardSearchTime() const;
+
+            /** \brief Returns time spent advancing the reverse search in the current solve. */
+            double getReverseSearchTime() const;
+
             /** \brief Returns the current estimated heuristic initial solution. */
             ompl::base::Cost getEstimatedHeuristicInitialSolution() const;
 
@@ -486,6 +498,15 @@ namespace ompl
 
             /** \brief The number of collision checked edges. */
             mutable unsigned int numCollisionCheckedEdges_{0u};
+
+            /** \brief Time spent creating, validating, pruning, and inserting sample batches in the current solve. */
+            double batchSamplingTime_{0.0};
+
+            /** \brief Time spent advancing the forward search in the current solve. */
+            double forwardSearchTime_{0.0};
+
+            /** \brief Time spent advancing the reverse search in the current solve. */
+            double reverseSearchTime_{0.0};
         };
 
     }  // namespace geometric

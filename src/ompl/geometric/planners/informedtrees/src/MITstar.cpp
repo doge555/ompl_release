@@ -37,6 +37,7 @@
 #include "ompl/geometric/planners/informedtrees/MITstar.h"
 
 #include <algorithm>
+#include <chrono>
 #include <memory>
 
 #include "ompl/base/objectives/PathLengthOptimizationObjective.h"
@@ -181,6 +182,10 @@ namespace ompl
 
         ompl::base::PlannerStatus MITstar::solve(const ompl::base::PlannerTerminationCondition &terminationCondition)
         {
+            batchSamplingTime_ = 0.0;
+            forwardSearchTime_ = 0.0;
+            reverseSearchTime_ = 0.0;
+
             // Check that the planner and state space are setup.
             auto status = ensureSetup();
 
@@ -309,6 +314,26 @@ namespace ompl
         unsigned int MITstar::getBatchSize() const
         {
             return batchSize_;
+        }
+
+        double MITstar::getBatchSamplingTime() const
+        {
+            return batchSamplingTime_;
+        }
+
+        double MITstar::getGraphSearchTime() const
+        {
+            return forwardSearchTime_ + reverseSearchTime_;
+        }
+
+        double MITstar::getForwardSearchTime() const
+        {
+            return forwardSearchTime_;
+        }
+
+        double MITstar::getReverseSearchTime() const
+        {
+            return reverseSearchTime_;
         }
 
         ompl::base::Cost MITstar::getEstimatedHeuristicInitialSolution() const
@@ -588,11 +613,17 @@ namespace ompl
             // First check if the reverse search needs to be continued.
             if (continueReverseSearch())
             {
+                const auto startedAt = std::chrono::steady_clock::now();
                 iterateReverseSearch();
+                reverseSearchTime_ += std::chrono::duration<double>(
+                    std::chrono::steady_clock::now() - startedAt).count();
             }  // If the reverse search is suspended, check if the forward search needs to be continued.
             else if (continueForwardSearch())
             {
+                const auto startedAt = std::chrono::steady_clock::now();
                 iterateForwardSearch();
+                forwardSearchTime_ += std::chrono::duration<double>(
+                    std::chrono::steady_clock::now() - startedAt).count();
             }  // If neither the reverse nor the forward search needs to be continued, improve the approximation.
             else
             {
@@ -854,7 +885,11 @@ namespace ompl
             }
             
             // Add new states, also prunes states if enabled. The method returns true if all states have been added.
-            if (graph_.addStates(batchSize_, terminationCondition))
+            const auto samplingStartedAt = std::chrono::steady_clock::now();
+            const bool addedBatch = graph_.addStates(batchSize_, terminationCondition);
+            batchSamplingTime_ += std::chrono::duration<double>(
+                std::chrono::steady_clock::now() - samplingStartedAt).count();
+            if (addedBatch)
             {
                 // Reset the reverse collision detection.
                 numSparseCollisionChecksCurrentLevel_ = initialNumSparseCollisionChecks_;
