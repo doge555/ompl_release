@@ -75,6 +75,11 @@ namespace ompl
             return getInformedMeasure(maxCost) - getInformedMeasure(minCost);
         }
 
+        unsigned int AdaptiveSampler::getInformedDimension() const
+        {
+            return space_->getDimension();
+        }
+
         Cost AdaptiveSampler::heuristicSolnCost(const State *statePtr) const
         {
             // Return the best heuristic estimate of the cost-to-come and cost-to-go from the state considering all

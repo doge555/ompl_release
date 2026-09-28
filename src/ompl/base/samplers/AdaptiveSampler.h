@@ -90,6 +90,9 @@ namespace ompl
              * has been found or if a closed form expression for the measure does not exist. */
             virtual double getInformedMeasure(const Cost &currentCost) const = 0;
 
+            /** \brief Effective dimension of the informed sampling domain. */
+            virtual unsigned int getInformedDimension() const;
+
             /** \brief The measure of the subset of the state space defined by the current solution cost that is being
              * searched. Does not consider problem boundaries but returns the measure of the entire space if no solution
              * has been found or if a closed form expression for the measure does not exist.  By default calls the

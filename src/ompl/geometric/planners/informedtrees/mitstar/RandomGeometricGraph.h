@@ -95,6 +95,9 @@ namespace ompl
                 /** \brief Returns the active sampler's informed-set measure at the given cost. */
                 double getInformedMeasure(const ompl::base::Cost &cost) const;
 
+                /** \brief Returns the active sampler's effective informed dimension. */
+                unsigned int getInformedDimension() const;
+
                 /** \brief Sets the radius factor (eta in the paper). */
                 void setRadiusFactor(double factor);
 

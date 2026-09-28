@@ -69,6 +69,9 @@ namespace ompl
         /** \brief Transform a point from a sphere to PHS. The return variable \e phs is expected to already exist.  */
         void transform(const double sphere[], double phs[]) const;
 
+        /** \brief Transform a point from an (n-1)-ball into a fixed-coordinate slice of the PHS. */
+        void transformSlice(const double sphere[], unsigned int fixedDimension, double fixedValue, double phs[]) const;
+
         /** \brief Check if the given point lies \e in the PHS. */
         bool isInPhs(const double point[]) const;
 
@@ -83,6 +86,11 @@ namespace ompl
 
         /** \brief The measure of the PHS for a given transverse diameter */
         double getPhsMeasure(double tranDiam) const;
+
+        /** \brief Measure after restricting one world coordinate to an interval and, optionally,
+         * fixing a second coordinate. The fixed-coordinate result is an (n-1)-dimensional slice. */
+        double getPhsMeasure(double tranDiam, unsigned int boundedDimension, double lowerBound, double upperBound,
+                             int fixedDimension, double fixedValue) const;
 
         /** \brief The minimum transverse diameter of the PHS, i.e., the distance between the foci */
         double getMinTransverseDiameter() const;

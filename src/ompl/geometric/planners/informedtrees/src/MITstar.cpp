@@ -581,7 +581,7 @@ namespace ompl
                     const double informedMeasure = graph_.getInformedMeasure(solutionCost_);
                     AdaptiveBatchSize adaptiveBatchSize_ =
                         AdaptiveBatchSize(decay_method_, solutionCost_, informedMeasure, batchSize_, S_max_initial_,
-                                          maxBatchSize_, minSamples_, spaceInfo_->getStateDimension());
+                                          maxBatchSize_, minSamples_, graph_.getInformedDimension());
                     unsigned int numSamples = adaptiveBatchSize_.adjustBatchSize(decay_method_);
                     batchSize_ = numSamples;
                 // if (solutionCost_.value() != lastsolutionCost_.value())

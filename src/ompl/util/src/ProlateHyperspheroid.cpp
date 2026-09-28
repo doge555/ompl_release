@@ -44,14 +44,19 @@
 #include "ompl/util/GeometricEquations.h"
 
 // For std::make_shared
+#include <algorithm>
+#include <cmath>
 #include <memory>
 
 // Eigen core:
 #include <eigen3/Eigen/Core>
 // Inversion and determinants
 #include <Eigen/LU>
+#include <Eigen/Eigenvalues>
 // SVD decomposition
 #include <Eigen/SVD>
+
+#include <boost/math/special_functions/beta.hpp>
 
 struct ompl::ProlateHyperspheroid::PhsData
 {
@@ -185,6 +190,134 @@ double ompl::ProlateHyperspheroid::getPhsMeasure() const
 double ompl::ProlateHyperspheroid::getPhsMeasure(double tranDiam) const
 {
     return prolateHyperspheroidMeasure(dataPtr_->dim_, dataPtr_->minTransverseDiameter_, tranDiam);
+}
+
+void ompl::ProlateHyperspheroid::transformSlice(const double sphere[], unsigned int fixedDimension,
+                                                double fixedValue, double phs[]) const
+{
+    if (!dataPtr_->isTransformUpToDate_)
+        throw Exception("The transformation is not up to date in the PHS class. Has the transverse diameter been set?");
+    if (fixedDimension >= dataPtr_->dim_)
+        throw Exception("The fixed PHS slice dimension is out of range.");
+
+    const Eigen::MatrixXd shape = dataPtr_->transformationWorldFromEllipse_ *
+                                  dataPtr_->transformationWorldFromEllipse_.transpose();
+    const double fixedVariance = shape(fixedDimension, fixedDimension);
+    const double fixedOffset = fixedValue - dataPtr_->xCentre_[fixedDimension];
+    const double normalizedOffsetSquared = fixedOffset * fixedOffset / fixedVariance;
+    if (normalizedOffsetSquared >= 1.0)
+        throw Exception("The requested fixed-coordinate slice does not intersect the PHS.");
+
+    const unsigned int sliceDimension = dataPtr_->dim_ - 1u;
+    Eigen::VectorXd centre(sliceDimension);
+    Eigen::MatrixXd conditionalShape(sliceDimension, sliceDimension);
+    unsigned int row = 0u;
+    for (unsigned int sourceRow = 0u; sourceRow < dataPtr_->dim_; ++sourceRow)
+    {
+        if (sourceRow == fixedDimension)
+            continue;
+        centre[row] = dataPtr_->xCentre_[sourceRow] +
+                      shape(sourceRow, fixedDimension) * fixedOffset / fixedVariance;
+        unsigned int column = 0u;
+        for (unsigned int sourceColumn = 0u; sourceColumn < dataPtr_->dim_; ++sourceColumn)
+        {
+            if (sourceColumn == fixedDimension)
+                continue;
+            conditionalShape(row, column) =
+                (1.0 - normalizedOffsetSquared) *
+                (shape(sourceRow, sourceColumn) - shape(sourceRow, fixedDimension) *
+                                                     shape(fixedDimension, sourceColumn) / fixedVariance);
+            ++column;
+        }
+        ++row;
+    }
+
+    Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> solver(conditionalShape);
+    if (solver.info() != Eigen::Success)
+        throw Exception("Failed to factor the fixed-coordinate PHS slice.");
+    const Eigen::VectorXd radii = solver.eigenvalues().cwiseMax(0.0).cwiseSqrt();
+    const Eigen::VectorXd slice = centre + solver.eigenvectors() * radii.asDiagonal() *
+                                              Eigen::Map<const Eigen::VectorXd>(sphere, sliceDimension);
+
+    unsigned int sliceIndex = 0u;
+    for (unsigned int dimension = 0u; dimension < dataPtr_->dim_; ++dimension)
+        phs[dimension] = dimension == fixedDimension ? fixedValue : slice[sliceIndex++];
+}
+
+double ompl::ProlateHyperspheroid::getPhsMeasure(double tranDiam, unsigned int boundedDimension, double lowerBound,
+                                                 double upperBound, int fixedDimension, double fixedValue) const
+{
+    const unsigned int dimension = dataPtr_->dim_;
+    const double transverseRadius = 0.5 * tranDiam;
+    const double conjugateRadius =
+        0.5 * std::sqrt(tranDiam * tranDiam -
+                        dataPtr_->minTransverseDiameter_ * dataPtr_->minTransverseDiameter_);
+    Eigen::VectorXd radii = Eigen::VectorXd::Constant(dimension, conjugateRadius);
+    radii[0] = transverseRadius;
+    const Eigen::MatrixXd shape = dataPtr_->rotationWorldFromEllipse_ * radii.array().square().matrix().asDiagonal() *
+                                  dataPtr_->rotationWorldFromEllipse_.transpose();
+
+    auto coordinateFraction = [](double centre, double radius, double lower, double upper, unsigned int dim) {
+        auto cdf = [dim](double value) {
+            const double clamped = std::max(-1.0, std::min(1.0, value));
+            if (clamped == 0.0)
+                return 0.5;
+            const double beta = boost::math::ibeta(0.5, 0.5 * (static_cast<double>(dim) + 1.0),
+                                                   clamped * clamped);
+            return 0.5 + std::copysign(0.5 * beta, clamped);
+        };
+        if (radius <= 0.0 || upper < centre - radius || lower > centre + radius)
+            return 0.0;
+        return std::max(0.0, cdf((upper - centre) / radius) - cdf((lower - centre) / radius));
+    };
+
+    if (fixedDimension < 0)
+    {
+        const double radius = std::sqrt(shape(boundedDimension, boundedDimension));
+        return getPhsMeasure(tranDiam) *
+               coordinateFraction(dataPtr_->xCentre_[boundedDimension], radius, lowerBound, upperBound, dimension);
+    }
+
+    const unsigned int fixed = static_cast<unsigned int>(fixedDimension);
+    const double fixedVariance = shape(fixed, fixed);
+    const double fixedOffset = fixedValue - dataPtr_->xCentre_[fixed];
+    const double normalizedOffsetSquared = fixedOffset * fixedOffset / fixedVariance;
+    if (normalizedOffsetSquared >= 1.0)
+        return 0.0;
+
+    Eigen::VectorXd conditionalCentre(dimension - 1u);
+    Eigen::MatrixXd conditionalShape(dimension - 1u, dimension - 1u);
+    unsigned int row = 0u;
+    unsigned int boundedSliceDimension = 0u;
+    for (unsigned int sourceRow = 0u; sourceRow < dimension; ++sourceRow)
+    {
+        if (sourceRow == fixed)
+            continue;
+        if (sourceRow == boundedDimension)
+            boundedSliceDimension = row;
+        conditionalCentre[row] = dataPtr_->xCentre_[sourceRow] +
+                                 shape(sourceRow, fixed) * fixedOffset / fixedVariance;
+        unsigned int column = 0u;
+        for (unsigned int sourceColumn = 0u; sourceColumn < dimension; ++sourceColumn)
+        {
+            if (sourceColumn == fixed)
+                continue;
+            conditionalShape(row, column) =
+                (1.0 - normalizedOffsetSquared) *
+                (shape(sourceRow, sourceColumn) -
+                 shape(sourceRow, fixed) * shape(fixed, sourceColumn) / fixedVariance);
+            ++column;
+        }
+        ++row;
+    }
+
+    const unsigned int sliceDimension = dimension - 1u;
+    const double sliceMeasure = unitNBallMeasure(sliceDimension) *
+                                std::sqrt(std::max(0.0, conditionalShape.determinant()));
+    const double boundedRadius =
+        std::sqrt(std::max(0.0, conditionalShape(boundedSliceDimension, boundedSliceDimension)));
+    return sliceMeasure * coordinateFraction(conditionalCentre[boundedSliceDimension], boundedRadius, lowerBound,
+                                             upperBound, sliceDimension);
 }
 
 double ompl::ProlateHyperspheroid::getMinTransverseDiameter() const

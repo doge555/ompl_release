@@ -373,6 +373,11 @@ namespace ompl
                 return sampler_->getInformedMeasure(cost);
             }
 
+            unsigned int RandomGeometricGraph::getInformedDimension() const
+            {
+                return sampler_ ? sampler_->getInformedDimension() : static_cast<unsigned int>(dimension_);
+            }
+
             void RandomGeometricGraph::setRadiusFactor(double factor)
             {
                 radiusFactor_ = factor;
@@ -997,6 +1002,8 @@ namespace ompl
 
             double RandomGeometricGraph::computeRadius(std::size_t numInformedSamples) const
             {
+                const double informedDimension = static_cast<double>(getInformedDimension());
+                const double informedUnitBallMeasure = unitNBallMeasure(getInformedDimension());
                 // Compute and return the radius. Note to self: double / int -> double. You looked it up. It's fine.
                 // RRT*
                 // return radiusFactor_ *
@@ -1014,10 +1021,10 @@ namespace ompl
 
                 // PRM*
                 return radiusFactor_ * 2.0 *
-                       std::pow((1.0 + 1.0 / dimension_) *
-                                    (sampler_->getInformedMeasure(currentcostsolution()) / unitNBallMeasure_) *
+                       std::pow((1.0 + 1.0 / informedDimension) *
+                                    (sampler_->getInformedMeasure(currentcostsolution()) / informedUnitBallMeasure) *
                                     (std::log(static_cast<double>(numInformedSamples)) / numInformedSamples),
-                                1.0 / dimension_);
+                                1.0 / informedDimension);
             }
 
         }  // namespace mitstar

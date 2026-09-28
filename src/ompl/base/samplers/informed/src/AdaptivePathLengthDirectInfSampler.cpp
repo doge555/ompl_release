@@ -45,6 +45,7 @@
 
 // For std::make_shared
 #include <memory>
+#include <stdexcept>
 #include <utility>
 // For std::vector
 #include <vector>
@@ -258,13 +259,97 @@ namespace ompl
             candidatePreprocessor_ = std::move(candidatePreprocessor);
         }
 
+        void AdaptivePathLengthDirectInfSampler::setRealVectorSamplingBounds(
+            const std::vector<double> &lowerBounds, const std::vector<double> &upperBounds)
+        {
+            if (AdaptiveSampler::space_->getType() != STATE_SPACE_REAL_VECTOR ||
+                lowerBounds.size() != AdaptiveSampler::space_->getDimension() ||
+                upperBounds.size() != lowerBounds.size())
+            {
+                throw Exception("RealVector sampling bounds must match the planning-space dimension.");
+            }
+
+            const auto &spaceBounds =
+                AdaptiveSampler::space_->as<RealVectorStateSpace>()->getBounds();
+            unsigned int fixedDimensions = 0u;
+            unsigned int narrowedDimensions = 0u;
+            for (std::size_t index = 0; index < lowerBounds.size(); ++index)
+            {
+                if (lowerBounds[index] > upperBounds[index] ||
+                    lowerBounds[index] < spaceBounds.low[index] ||
+                    upperBounds[index] > spaceBounds.high[index])
+                {
+                    throw Exception("RealVector sampling bounds must lie inside the planning-space bounds.");
+                }
+                if (lowerBounds[index] == upperBounds[index])
+                    ++fixedDimensions;
+                else if (lowerBounds[index] > spaceBounds.low[index] || upperBounds[index] < spaceBounds.high[index])
+                    ++narrowedDimensions;
+            }
+            if (fixedDimensions > 1u || narrowedDimensions > 1u)
+                throw Exception("Constrained informed measure supports one fixed and one interval-bounded dimension.");
+            samplingLowerBounds_ = lowerBounds;
+            samplingUpperBounds_ = upperBounds;
+        }
+
+        void AdaptivePathLengthDirectInfSampler::sampleUniformFromConfiguredBounds(State *statePtr)
+        {
+            auto *values = statePtr->as<RealVectorStateSpace::StateType>()->values;
+            for (std::size_t index = 0; index < samplingLowerBounds_.size(); ++index)
+            {
+                values[index] = samplingLowerBounds_[index] == samplingUpperBounds_[index]
+                                    ? samplingLowerBounds_[index]
+                                    : rng_.uniformReal(samplingLowerBounds_[index], samplingUpperBounds_[index]);
+            }
+        }
+
+        void AdaptivePathLengthDirectInfSampler::sampleGaussianFromConfiguredBounds(
+            State *statePtr, const State *mean, const double stdDev)
+        {
+            auto *values = statePtr->as<RealVectorStateSpace::StateType>()->values;
+            const auto *meanValues = mean->as<RealVectorStateSpace::StateType>()->values;
+            for (std::size_t index = 0; index < samplingLowerBounds_.size(); ++index)
+            {
+                if (samplingLowerBounds_[index] == samplingUpperBounds_[index])
+                {
+                    values[index] = samplingLowerBounds_[index];
+                    continue;
+                }
+                do
+                {
+                    values[index] = rng_.gaussian(meanValues[index], stdDev);
+                } while (values[index] < samplingLowerBounds_[index] ||
+                         values[index] > samplingUpperBounds_[index]);
+            }
+        }
+
+        bool AdaptivePathLengthDirectInfSampler::satisfiesConfiguredSamplingBounds(
+            const State *statePtr) const
+        {
+            if (samplingLowerBounds_.empty())
+            {
+                return true;
+            }
+            const auto *values = statePtr->as<RealVectorStateSpace::StateType>()->values;
+            for (std::size_t index = 0; index < samplingLowerBounds_.size(); ++index)
+            {
+                if (values[index] < samplingLowerBounds_[index] ||
+                    values[index] > samplingUpperBounds_[index])
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+
         bool AdaptivePathLengthDirectInfSampler::preprocessAndValidate(State *statePtr)
         {
             if (candidatePreprocessor_ && !candidatePreprocessor_(statePtr))
             {
                 return false;
             }
-            return AdaptiveSampler::space_->satisfiesBounds(statePtr) &&
+            return satisfiesConfiguredSamplingBounds(statePtr) &&
+                   AdaptiveSampler::space_->satisfiesBounds(statePtr) &&
                    AdaptiveSampler::getProblemDefn()->getSpaceInformation()->isValid(statePtr);
         }
 
@@ -325,6 +410,38 @@ namespace ompl
             // The measure of the informed set
             double informedMeasure = 0.0;
 
+            if (!AdaptiveSampler::opt_->isFinite(currentCost))
+            {
+                if (samplingLowerBounds_.empty())
+                    return AdaptiveSampler::space_->getMeasure();
+                double configuredMeasure = 1.0;
+                for (std::size_t index = 0u; index < samplingLowerBounds_.size(); ++index)
+                    if (samplingLowerBounds_[index] != samplingUpperBounds_[index])
+                        configuredMeasure *= samplingUpperBounds_[index] - samplingLowerBounds_[index];
+                return configuredMeasure;
+            }
+
+            int fixedDimension = -1;
+            unsigned int boundedDimension = 0u;
+            double lowerBound = -std::numeric_limits<double>::infinity();
+            double upperBound = std::numeric_limits<double>::infinity();
+            if (!samplingLowerBounds_.empty())
+            {
+                const auto &spaceBounds = AdaptiveSampler::space_->as<RealVectorStateSpace>()->getBounds();
+                for (unsigned int index = 0u; index < samplingLowerBounds_.size(); ++index)
+                {
+                    if (samplingLowerBounds_[index] == samplingUpperBounds_[index])
+                        fixedDimension = static_cast<int>(index);
+                    else if (samplingLowerBounds_[index] > spaceBounds.low[index] ||
+                             samplingUpperBounds_[index] < spaceBounds.high[index])
+                    {
+                        boundedDimension = index;
+                        lowerBound = samplingLowerBounds_[index];
+                        upperBound = samplingUpperBounds_[index];
+                    }
+                }
+            }
+
             // The informed measure is then the sum of the measure of the individual PHSs for the given cost:
             for (const auto &phsPtr : listPhsPtrs_)
             {
@@ -332,7 +449,13 @@ namespace ompl
                 // skip those that do
                 if (currentCost.value() > phsPtr->getMinTransverseDiameter())
                 {
-                    informedMeasure = informedMeasure + phsPtr->getPhsMeasure(currentCost.value());
+                    if (samplingLowerBounds_.empty())
+                        informedMeasure += phsPtr->getPhsMeasure(currentCost.value());
+                    else
+                        informedMeasure += phsPtr->getPhsMeasure(currentCost.value(), boundedDimension, lowerBound,
+                                                                 upperBound, fixedDimension,
+                                                                 fixedDimension < 0 ? 0.0 :
+                                                                     samplingLowerBounds_[fixedDimension]);
                 }
                 // No else, this value is better than this ellipse. It will get removed later.
             }
@@ -343,8 +466,23 @@ namespace ompl
                 informedMeasure = informedMeasure * uninformedSubSpace_->getMeasure();
             }
 
-            // Return the smaller of the two measures
-            return std::min(AdaptiveSampler::space_->getMeasure(), informedMeasure);
+            if (samplingLowerBounds_.empty())
+                return std::min(AdaptiveSampler::space_->getMeasure(), informedMeasure);
+
+            double configuredMeasure = 1.0;
+            for (std::size_t index = 0u; index < samplingLowerBounds_.size(); ++index)
+                if (samplingLowerBounds_[index] != samplingUpperBounds_[index])
+                    configuredMeasure *= samplingUpperBounds_[index] - samplingLowerBounds_[index];
+            return std::min(configuredMeasure, informedMeasure);
+        }
+
+        unsigned int AdaptivePathLengthDirectInfSampler::getInformedDimension() const
+        {
+            unsigned int dimension = AdaptiveSampler::space_->getDimension();
+            for (std::size_t index = 0u; index < samplingLowerBounds_.size(); ++index)
+                if (samplingLowerBounds_[index] == samplingUpperBounds_[index])
+                    --dimension;
+            return dimension;
         }
 
         Cost AdaptivePathLengthDirectInfSampler::heuristicSolnCost(const State *statePtr) const
@@ -383,7 +521,14 @@ namespace ompl
             {
                 for (unsigned int i = 0; i < AdaptiveSampler::numIters_ && !foundSample;++i)
                 {  
-                    baseSampler_->sampleUniform(statePtr);
+                    if (samplingLowerBounds_.empty())
+                    {
+                        baseSampler_->sampleUniform(statePtr);
+                    }
+                    else
+                    {
+                        sampleUniformFromConfiguredBounds(statePtr);
+                    }
                     bool v1 = false, v2 = false;
                     //randomly sample a state
                     v1 = preprocessAndValidate(statePtr);
@@ -398,7 +543,14 @@ namespace ompl
                     {
                         //if it is not valid, sample a temporary state that is standard deviation distance away from the current state
                         //if it is valid, output it
-                        baseSampler_->sampleGaussian(temp, statePtr, stddev_);
+                        if (samplingLowerBounds_.empty())
+                        {
+                            baseSampler_->sampleGaussian(temp, statePtr, stddev_);
+                        }
+                        else
+                        {
+                            sampleGaussianFromConfiguredBounds(temp, statePtr, stddev_);
+                        }
                         v2 = preprocessAndValidate(temp);
                         if (v2)
                         {
@@ -436,7 +588,12 @@ namespace ompl
                 // When the summed measure of the PHSes are suitably large, it makes more sense to just sample from the
                 // entire planning space and keep the sample if it lies in any PHS
                 // Check if the average measure is greater than half the domain's measure. Half is an arbitrary number.
-                if (informedSubSpace_->getMeasure() < summedMeasure_ / static_cast<double>(listPhsPtrs_.size()))
+                if (!samplingLowerBounds_.empty())
+                {
+                    foundSample = sampleConstrainedPhs(statePtr, iters);
+                }
+                else if (informedSubSpace_->getMeasure() <
+                         summedMeasure_ / static_cast<double>(listPhsPtrs_.size()))
                 {
                     // The measure is large, sample from the entire world and keep if it's in any PHS
                     foundSample = sampleBoundsRejectPhs(statePtr, iters);
@@ -467,7 +624,14 @@ namespace ompl
             while (!foundvalidSample && *iters < AdaptiveSampler::numIters_)
             {
                 // Generate a random sample
-                baseSampler_->sampleUniform(statePtr);
+                if (samplingLowerBounds_.empty())
+                {
+                    baseSampler_->sampleUniform(statePtr);
+                }
+                else
+                {
+                    sampleUniformFromConfiguredBounds(statePtr);
+                }
 
                 bool v1 = false, v2 = false;
                 //randomly sample a state
@@ -483,7 +647,14 @@ namespace ompl
                 {
                     //if it is not valid, sample a temporary state that is standard deviation distance away from the current state
                     //if it is valid, output it
-                    baseSampler_->sampleGaussian(temp, statePtr, stddev_);
+                    if (samplingLowerBounds_.empty())
+                    {
+                        baseSampler_->sampleGaussian(temp, statePtr, stddev_);
+                    }
+                    else
+                    {
+                        sampleGaussianFromConfiguredBounds(temp, statePtr, stddev_);
+                    }
                     v2 = preprocessAndValidate(temp);
                     if (v2)
                     {
@@ -561,6 +732,39 @@ namespace ompl
 
             // Successful?
             return foundSample;
+        }
+
+        bool AdaptivePathLengthDirectInfSampler::sampleConstrainedPhs(State *statePtr, unsigned int *iters)
+        {
+            int fixedDimension = -1;
+            for (unsigned int index = 0u; index < samplingLowerBounds_.size(); ++index)
+                if (samplingLowerBounds_[index] == samplingUpperBounds_[index])
+                    fixedDimension = static_cast<int>(index);
+
+            while (*iters < AdaptiveSampler::numIters_)
+            {
+                std::vector<double> informedVector(informedSubSpace_->getDimension());
+                ProlateHyperspheroidCPtr phsCPtr = randomPhsPtr();
+                if (fixedDimension < 0)
+                {
+                    rng_.uniformProlateHyperspheroid(phsCPtr, informedVector.data());
+                }
+                else
+                {
+                    std::vector<double> unitBall(informedVector.size() - 1u);
+                    rng_.uniformInBall(1.0, unitBall);
+                    phsCPtr->transformSlice(unitBall.data(), static_cast<unsigned int>(fixedDimension),
+                                           samplingLowerBounds_[fixedDimension], informedVector.data());
+                }
+                ++(*iters);
+
+                createFullState(statePtr, informedVector);
+                if (!satisfiesConfiguredSamplingBounds(statePtr) || !keepSample(informedVector) ||
+                    !preprocessAndValidate(statePtr))
+                    continue;
+                return satisfiesConfiguredSamplingBounds(statePtr) && isInAnyPhs(getInformedSubstate(statePtr));
+            }
+            return false;
         }
 
         std::vector<double> AdaptivePathLengthDirectInfSampler::getInformedSubstate(const State *statePtr) const

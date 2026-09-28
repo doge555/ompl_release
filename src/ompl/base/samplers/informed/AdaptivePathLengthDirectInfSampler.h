@@ -108,12 +108,25 @@ namespace ompl
              * therefore the resulting measure will be an overestimate if any of the subsets overlap. */
             double getInformedMeasure(const Cost &currentCost) const override;
 
+            /** \brief Effective dimension after applying configured fixed coordinates. */
+            unsigned int getInformedDimension() const override;
+
             /** \brief A helper function to calculate the heuristic estimate of the solution cost for the informed
              * subset of a given state. */
             Cost heuristicSolnCost(const State *statePtr) const override;
 
             /** \brief Optionally transform a candidate before the sampler's internal validity checks. */
             void setCandidatePreprocessor(CandidatePreprocessor candidatePreprocessor);
+
+            /** \brief Restrict uninformed candidate generation to a RealVector box.
+             *
+             * Equal lower and upper values fix a dimension. When configured, the
+             * sampler draws every uninformed candidate directly from this box and
+             * uses box-constrained Gaussian perturbations. Informed membership is
+             * still evaluated with the path-length heuristic.
+             */
+            void setRealVectorSamplingBounds(const std::vector<double> &lowerBounds,
+                                             const std::vector<double> &upperBounds);
 
             /** Set the seeds of the underlying RNGs */
             void setLocalSeed(std::uint_fast32_t localSeed) override
@@ -152,8 +165,20 @@ namespace ompl
              * (i.e., it \e may be kept). */
             bool samplePhsRejectBounds(State *statePtr, unsigned int *iters);
 
+            /** \brief Sample the PHS directly, using an exact lower-dimensional slice for fixed coordinates. */
+            bool sampleConstrainedPhs(State *statePtr, unsigned int *iters);
+
             /** \brief Apply the optional candidate transformation and then run the planning validity checker. */
             bool preprocessAndValidate(State *statePtr);
+
+            /** \brief Draw directly from the configured RealVector sampling box. */
+            void sampleUniformFromConfiguredBounds(State *statePtr);
+
+            /** \brief Draw a Gaussian perturbation constrained to the configured box. */
+            void sampleGaussianFromConfiguredBounds(State *statePtr, const State *mean, double stdDev);
+
+            /** \brief Return whether a state remains inside the configured sampling box. */
+            bool satisfiesConfiguredSamplingBounds(const State *statePtr) const;
 
             // Low level
             /** \brief Extract the informed subspace from a state pointer */
@@ -216,6 +241,10 @@ namespace ompl
 
             /** \brief Optional application-level candidate transformation used before internal validity feedback. */
             CandidatePreprocessor candidatePreprocessor_;
+
+            /** \brief Optional task-specific box used for direct RealVector candidate generation. */
+            std::vector<double> samplingLowerBounds_;
+            std::vector<double> samplingUpperBounds_;
 
             /** \brief An instance of a random number generator */
             RNG rng_;
