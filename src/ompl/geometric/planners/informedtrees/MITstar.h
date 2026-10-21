@@ -37,6 +37,7 @@
 #ifndef OMPL_GEOMETRIC_PLANNERS_INFORMEDTREES_MITSTAR_
 #define OMPL_GEOMETRIC_PLANNERS_INFORMEDTREES_MITSTAR_
 
+#include <functional>
 #include <memory>
 
 #include "ompl/base/Cost.h"
@@ -57,6 +58,9 @@ namespace ompl
         class MITstar : public ompl::base::Planner
         {
         public:
+            using FullEdgeValidationFunction =
+                std::function<bool(const ompl::base::State *, const ompl::base::State *)>;
+
             /** \brief Constructs an instance of MIT* using the provided space information. */
             explicit MITstar(const std::shared_ptr<ompl::base::SpaceInformation> &spaceInfo);
 
@@ -188,6 +192,11 @@ namespace ompl
             /** \brief Set the seed used by the RNG and the StateSampler. The state sampler must already be allocated,
              * as a new state sampler will not take this seed. */
             void setLocalSeed(std::uint_fast32_t localSeed);
+
+            /** \brief Sets an optional additional validator that is evaluated only after the canonical
+             * full-resolution state checks pass and before the edge is whitelisted. Sparse reverse checks do not
+             * invoke this callback. The callback must implement a symmetric edge predicate. */
+            void setFullEdgeValidationFunction(FullEdgeValidationFunction validationFunction);
 
         protected:
             // ---
@@ -471,6 +480,9 @@ namespace ompl
 
             /** \brief Direct access to the motion validator of the state space. */
             std::shared_ptr<ompl::base::MotionValidator> motionValidator_;
+
+            /** \brief Optional application-specific predicate required before a fully checked edge is certified. */
+            FullEdgeValidationFunction fullEdgeValidationFunction_{};
 
             /** \brief The estimated heuristic initial solution. */
             ompl::base::Cost estimatedheuristicinitialsolutionCost_{std::numeric_limits<double>::infinity()};

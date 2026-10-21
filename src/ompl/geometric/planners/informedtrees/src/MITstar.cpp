@@ -39,6 +39,7 @@
 #include <algorithm>
 #include <chrono>
 #include <memory>
+#include <utility>
 
 #include "ompl/base/objectives/PathLengthOptimizationObjective.h"
 #include "ompl/geometric/PathGeometric.h"
@@ -562,6 +563,12 @@ namespace ompl
         void MITstar::setLocalSeed(std::uint_fast32_t localSeed)
         {
             graph_.setLocalSeed(localSeed);
+        }
+
+        void MITstar::setFullEdgeValidationFunction(
+            FullEdgeValidationFunction validationFunction)
+        {
+            fullEdgeValidationFunction_ = std::move(validationFunction);
         }
 
         void MITstar::iterate(const ompl::base::PlannerTerminationCondition &terminationCondition)
@@ -1663,6 +1670,15 @@ namespace ompl
             // but only the forward full validator may issue the certificate.
             if (certifyFullValidation && completedChecks == fullCheckCount)
             {
+                if (fullEdgeValidationFunction_ &&
+                    !fullEdgeValidationFunction_(edge.source->raw(), edge.target->raw()))
+                {
+                    edge.source->blacklist(edge.target);
+                    edge.target->blacklist(edge.source);
+                    graph_.registerInvalidEdge(edge);
+                    return false;
+                }
+
                 ++numCollisionCheckedEdges_;
                 edge.source->whitelist(edge.target);
                 edge.target->whitelist(edge.source);
