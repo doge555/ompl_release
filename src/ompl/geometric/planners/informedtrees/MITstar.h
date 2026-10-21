@@ -39,6 +39,8 @@
 
 #include <functional>
 #include <memory>
+#include <set>
+#include <utility>
 
 #include "ompl/base/Cost.h"
 #include "ompl/base/Planner.h"
@@ -193,9 +195,9 @@ namespace ompl
              * as a new state sampler will not take this seed. */
             void setLocalSeed(std::uint_fast32_t localSeed);
 
-            /** \brief Sets an optional additional validator that is evaluated only after the canonical
-             * full-resolution state checks pass and before the edge is whitelisted. Sparse reverse checks do not
-             * invoke this callback. The callback must implement a symmetric edge predicate. */
+            /** \brief Sets an optional additional directed validator that is evaluated only after the canonical
+             * full-resolution state checks pass. Sparse reverse checks do not invoke this callback. Results are
+             * cached separately for source-to-target and target-to-source directions. */
             void setFullEdgeValidationFunction(FullEdgeValidationFunction validationFunction);
 
         protected:
@@ -483,6 +485,10 @@ namespace ompl
 
             /** \brief Optional application-specific predicate required before a fully checked edge is certified. */
             FullEdgeValidationFunction fullEdgeValidationFunction_{};
+
+            /** \brief Directed application-specific full-edge certificates and rejections. */
+            mutable std::set<std::pair<std::size_t, std::size_t>> fullEdgeValidationWhitelist_{};
+            mutable std::set<std::pair<std::size_t, std::size_t>> fullEdgeValidationBlacklist_{};
 
             /** \brief The estimated heuristic initial solution. */
             ompl::base::Cost estimatedheuristicinitialsolutionCost_{std::numeric_limits<double>::infinity()};

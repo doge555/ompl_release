@@ -244,6 +244,8 @@ namespace ompl
             goalVertices_.clear();
             objective_.reset();
             graph_.clear();
+            fullEdgeValidationWhitelist_.clear();
+            fullEdgeValidationBlacklist_.clear();
 
             // Reset the solution costs. Cannot use infiniteCost() before resetting the objective because the objective
             // of a new problem definition objective might define that differently than the old.
@@ -276,6 +278,8 @@ namespace ompl
                 startVertices_.clear();
                 goalVertices_.clear();
                 graph_.clearQuery();
+                fullEdgeValidationWhitelist_.clear();
+                fullEdgeValidationBlacklist_.clear();
                 solutionCost_ = objective_->infiniteCost();
                 lastsolutionCost_ = objective_->infiniteCost();
                 reverseCost_ = objective_->infiniteCost();
@@ -569,6 +573,8 @@ namespace ompl
             FullEdgeValidationFunction validationFunction)
         {
             fullEdgeValidationFunction_ = std::move(validationFunction);
+            fullEdgeValidationWhitelist_.clear();
+            fullEdgeValidationBlacklist_.clear();
         }
 
         void MITstar::iterate(const ompl::base::PlannerTerminationCondition &terminationCondition)
@@ -1270,6 +1276,12 @@ namespace ompl
                 {
                     return false;
                 }
+                if (fullEdgeValidationFunction_ &&
+                    fullEdgeValidationWhitelist_.find({parent->getId(), current->getId()}) ==
+                        fullEdgeValidationWhitelist_.end())
+                {
+                    return false;
+                }
                 current = parent;
             }
             return true;
@@ -1542,10 +1554,33 @@ namespace ompl
         bool MITstar::isValidAtResolution(const Edge &edge, std::size_t numChecks,
                                           const bool certifyFullValidation) const
         {
+            const auto directedEdge = std::make_pair(edge.source->getId(), edge.target->getId());
+            const auto validateDirectedFullEdge = [this, &edge, &directedEdge]() {
+                if (!fullEdgeValidationFunction_)
+                {
+                    return true;
+                }
+                if (fullEdgeValidationWhitelist_.find(directedEdge) != fullEdgeValidationWhitelist_.end())
+                {
+                    return true;
+                }
+                if (fullEdgeValidationBlacklist_.find(directedEdge) != fullEdgeValidationBlacklist_.end())
+                {
+                    return false;
+                }
+                if (fullEdgeValidationFunction_(edge.source->raw(), edge.target->raw()))
+                {
+                    fullEdgeValidationWhitelist_.insert(directedEdge);
+                    return true;
+                }
+                fullEdgeValidationBlacklist_.insert(directedEdge);
+                return false;
+            };
+
             // Check if the edge is whitelisted.
             if (edge.source->isWhitelisted(edge.target))
             {
-                return true;
+                return !certifyFullValidation || validateDirectedFullEdge();
             }
 
             // If the edge is blacklisted.
@@ -1670,21 +1705,14 @@ namespace ompl
             // but only the forward full validator may issue the certificate.
             if (certifyFullValidation && completedChecks == fullCheckCount)
             {
-                if (fullEdgeValidationFunction_ &&
-                    !fullEdgeValidationFunction_(edge.source->raw(), edge.target->raw()))
-                {
-                    edge.source->blacklist(edge.target);
-                    edge.target->blacklist(edge.source);
-                    graph_.registerInvalidEdge(edge);
-                    return false;
-                }
-
                 ++numCollisionCheckedEdges_;
                 edge.source->whitelist(edge.target);
                 edge.target->whitelist(edge.source);
 
                 graph_.registerWhitelistedState(edge.source);
                 graph_.registerWhitelistedState(edge.target);
+
+                return validateDirectedFullEdge();
             }
 
             return true;
